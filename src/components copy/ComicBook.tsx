@@ -45,8 +45,6 @@ interface ComicBookProps {
     updated_at: string;
   }>; // NEW: panels data from API for edit mode
   isPaid?: boolean; // NEW: payment status for edit mode
-  isCuratedStory?: boolean; // NEW: flag for curated story mode
-  onCuratedDownloadPDF?: (viewMode: 'grid' | 'split') => Promise<void>; // NEW: curated story PDF download handler
 }
 
 const ComicBook: React.FC<ComicBookProps> = ({
@@ -74,8 +72,6 @@ const ComicBook: React.FC<ComicBookProps> = ({
   title,
   panels,
   isPaid = false,
-  isCuratedStory = false,
-  onCuratedDownloadPDF,
 }) => {
   console.log('=== COMIC BOOK PARSING DEBUG ===');
   console.log('Raw story length:', story.length);
@@ -208,14 +204,23 @@ const ComicBook: React.FC<ComicBookProps> = ({
     return new File([blob], filename, { type: blob.type });
   }
 
+  function fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
   // Check if payment has been made (no locked panels beyond the first 2 free ones)
   const isPaymentComplete = () => {
-    // Use isPaid prop for payment status (same pattern as StoryActions)
-    console.log('🔍 ComicBook isPaymentComplete called, isPaid =', isPaid);
-    return isPaid;
+    if (!lockedPanels || lockedPanels.length === 0) return false;
+    // Payment is complete if there are no locked panels beyond the first 2
+    return !lockedPanels.slice(2).some(locked => locked === true);
   };
 
-  const handleDownloadPDF = async (downloadViewMode?: 'grid' | 'split') => {
+  const handleDownloadPDF = async () => {
     // Check payment status first
     if (!isPaymentComplete()) {
       onUnlockRequest?.();
@@ -223,34 +228,7 @@ const ComicBook: React.FC<ComicBookProps> = ({
       return;
     }
 
-    // If this is a curated story, use the curated download handler
-    if (isCuratedStory && onCuratedDownloadPDF) {
-      console.log('🔍 Using curated story PDF download handler');
-      await onCuratedDownloadPDF(downloadViewMode || 'grid');
-      return;
-    }
-
-    console.log('🔍 ComicBook handleDownloadPDF 123called, isPaid =', isPaid)
-    console.log('🔍 ComicBook handleDownloadPDF 123called, story =', story)
-    console.log('🔍 ComicBook handleDownloadPDF 123called, images =', images)
-    // if (!story || !images) return;
-
-
-    // Use the specified view mode for download, or current view mode if not specified
-    const pdfViewMode = downloadViewMode || viewMode;
-    
-    // Debug logging
-    console.log('🔍 ComicBook handleDownloadPDF Debug:', {
-      isPaid,
-      storyLength: story?.length,
-      imagesLength: images?.length,
-      images: images,
-      validImagesCount: images?.filter(img => img !== null && img !== undefined).length,
-      story: story?.substring(0, 200) + '...',
-      characterName,
-      genre,
-      title
-    });
+    if (!story || !images) return;
     
     trackDownloadPDFButtonClicked('download_pdf_button');
 
@@ -261,33 +239,9 @@ const ComicBook: React.FC<ComicBookProps> = ({
       // Filter out null/undefined images
       const validImages = images.filter((img): img is string => img !== null && img !== undefined);
       
-      console.log('🔍 Valid images for PDF:', validImages);
-      
       if (validImages.length === 0) {
-        console.log('⚠️ No valid images found, attempting PDF generation with story only');
-        // Try to generate PDF with just the story content
-        try {
-          const pdf = await generateComicPDF(
-            story,
-            characterName,
-            characterPhoto,
-            genre,
-            [], // Empty images array
-            openaiApiKey,
-            cleanPanelTextForDisplay,
-            pdfViewMode,
-            title
-          );
-          
-          const filename = `${characterName}-${genre}-comic-${pdfViewMode}-story-only.pdf`;
-          pdf.save(filename);
-          toast.success(`Comic PDF (${pdfViewMode} view) downloaded successfully! (Story only)`);
-          return;
-        } catch (error) {
-          console.error('Error generating PDF with story only:', error);
-          toast.error('No images available for PDF generation. Please wait for images to be generated or try regenerating panels.');
+        toast.error('No images available for PDF generation');
         return;
-        }
       }
 
       // Download and convert each image to base64
@@ -305,17 +259,7 @@ const ComicBook: React.FC<ComicBookProps> = ({
         })
       );
 
-      console.log('🔍 About to call generateComicPDF with:', {
-        storyLength: story?.length,
-        characterName,
-        characterPhoto: !!characterPhoto,
-        genre,
-        base64ImagesLength: base64Images.length,
-        pdfViewMode,
-        title
-      });
-
-      // Generate PDF with specified view mode using the raw story (same as StoryActions)
+      // Generate PDF with current view mode using the raw story (same as StoryActions)
       const pdf = await generateComicPDF(
         story, // Use raw story like StoryActions does
         characterName,
@@ -324,15 +268,13 @@ const ComicBook: React.FC<ComicBookProps> = ({
         base64Images,
         openaiApiKey,
         cleanPanelTextForDisplay,
-        pdfViewMode, // Pass specified view mode for PDF
+        viewMode, // Pass current view mode
         title // NEW: pass the title
       );
       
-      console.log('✅ PDF generated successfully:', pdf);
-      
-      const filename = `${characterName}-${genre}-comic-${pdfViewMode}.pdf`;
+      const filename = `${characterName}-${genre}-comic-${viewMode}.pdf`;
       pdf.save(filename);
-      toast.success(`Comic PDF (${pdfViewMode} view) downloaded successfully!`);
+      toast.success(`Comic PDF (${viewMode} view) downloaded successfully!`);
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast.error('Failed to generate PDF. Please try again.');
@@ -418,7 +360,10 @@ const ComicBook: React.FC<ComicBookProps> = ({
         {/* Download Options */}
         <div className="flex flex-col md:flex-row gap-3 mb-4">
           <Button
-            onClick={() => handleDownloadPDF('grid')}
+            onClick={() => {
+              setViewMode('grid');
+              handleDownloadPDF();
+            }}
             disabled={isDownloadingPDF || !images || images.filter(img => img).length === 0}
             variant="outline"
             className="flex-1 border-2 border-blue-300 text-blue-700 hover:bg-blue-50"
@@ -436,7 +381,10 @@ const ComicBook: React.FC<ComicBookProps> = ({
             )}
           </Button>
           <Button
-            onClick={() => handleDownloadPDF('split')}
+            onClick={() => {
+              setViewMode('split');
+              handleDownloadPDF();
+            }}
             disabled={isDownloadingPDF || !images || images.filter(img => img).length === 0}
             variant="outline"
             className="flex-1 border-2 border-blue-300 text-blue-700 hover:bg-blue-50"
@@ -449,7 +397,7 @@ const ComicBook: React.FC<ComicBookProps> = ({
             ) : (
               <>
                 <FileText className="w-4 h-4 mr-2" />
-                Download PDFa (Split)
+                Download PDF (Split)
               </>
             )}
           </Button>
