@@ -179,7 +179,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
         currency: "INR",
         description: "Storymaker Premium",
       };
-
+      debugger;
       // Add story_id if available
       if (storyId) {
         orderRequest.story_id = storyId;

@@ -8,7 +8,7 @@ import ComicBook from '@/components/ComicBook';
 import StoryActions from '@/components/StoryActions';
 import PricingModal from '@/components/PricingModal';
 import { trackCheckoutStarted, trackPurchaseCompleted } from '@/utils/gtm';
-import { generateComicPDF } from '@/utils/pdfGenerator';
+import { generateCuratedStoryPDF } from '@/utils/pdfGenerator';
 
 interface CuratedPanel {
   id: string;
@@ -265,173 +265,55 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
     return sections.slice(0, 8); // Limit to 8 panels
   };
 
+  // Function to generate story content from panels for download and sharing
+  const generateStoryContentFromPanels = (): string => {
+    if (!panels || panels.length === 0) {
+      return curatedStoryResult.story_content || '';
+    }
+
+    // Create story content from panel texts
+    const panelTexts = panels.map(panel => panel.panel_text || '').filter(text => text.trim());
+    return panelTexts.join('\n\n');
+  };
+
   // New PDF download function for FinalCuratedPreview
   const handleDownloadPDF = async (viewMode: 'grid' | 'split') => {
-    debugger; // Debugger statement added for debugging
-    console.log('🔍 Curated story result:', curatedStoryResult);
-    console.log('🔍 FinalCuratedPreview handleDownloadPDF called:', {
-      viewMode,
-      isPaid: localIsPaid,
-      imagesLength: images.length,
-      validImagesCount: images.filter(img => img !== null && img !== undefined).length,
-      panelsLength: panels.length,
-      curatedStoryResultPanelsLength: curatedStoryResult.panels?.length || 0
-    });
-
     // Check payment status
     if (!localIsPaid) {
       onUnlockRequest?.();
       return;
     }
-    console.log('🔍 Curated story result:', curatedStoryResult);
-    console.log('🔍 Images:', images);
-    if (!panels || panels.length === 0 || !images) {
-      toast.error('No panel data or images available for PDF generation');
+
+    if (!panels || panels.length === 0) {
+      toast.error('No panel data available for PDF generation');
       return;
     }
-
+    debugger;
     try {
-      toast.info('Preparing images for PDF...');
+      toast.info('Preparing PDF for curated story...');
       
-      // Always use the latest panels state (which gets updated after payment/regeneration)
-      // This ensures we get the most up-to-date data even if panels were updated after regeneration
-      const panelData = [...panels]; // Create a copy to ensure we have the latest state
-      console.log('🔍 Panel data from current state:', panelData);
-      console.log('🔍 Current panels state at PDF generation time:', {
-        panelsLength: panels.length,
-        panelsWithImages: panels.filter(p => p.aws_s3_image_url || p.file_url).length,
-        panelsWithText: panels.filter(p => p.panel_text && p.panel_text.trim()).length,
-        allPanelIds: panels.map(p => p.panel_id || p.id),
-        allImageUrls: panels.map(p => p.aws_s3_image_url || p.file_url)
-      });
-      console.log('🔍 Comparison - Original vs Current panels:', {
-        originalPanelsCount: curatedStoryResult.panels?.length || 0,
-        currentPanelsCount: panels.length,
-        originalPanelsWithImages: curatedStoryResult.panels?.filter(p => p.aws_s3_image_url || p.file_url).length || 0,
-        currentPanelsWithImages: panels.filter(p => p.aws_s3_image_url || p.file_url).length || 0,
-        imagesArrayWithUrls: images.filter(img => img !== null && img !== undefined).length,
-        imagesArrayLength: images.length
-      });
+      // Extract data directly from panels array - this is the source of truth
+      const panelTexts = panels.map(panel => panel.panel_text || '');
+      const imageUrls = panels.map(panel => panel.aws_s3_image_url || panel.file_url);
       
-      // Debug: Check if we have all panels
-      console.log('🔍 PANEL COUNT ANALYSIS:');
-      console.log('  - Total panels in current state:', panels.length);
-      console.log('  - Panels with images:', panels.filter(p => p.aws_s3_image_url || p.file_url).length);
-      console.log('  - Panels with text:', panels.filter(p => p.panel_text && p.panel_text.trim()).length);
-      console.log('  - All panel numbers:', panels.map(p => p.panel_number));
-      console.log('  - All panel texts (first 50 chars):', panels.map(p => p.panel_text?.substring(0, 50) + '...'));
+      console.log('🔍 Curated Story PDF Generation:');
+      console.log('  - Total panels:', panels.length);
+      console.log('  - Panels with text:', panelTexts.filter(text => text.trim()).length);
+      console.log('  - Panels with images:', imageUrls.filter(url => url).length);
+      console.log('  - Panel texts:', panelTexts);
+      console.log('  - Image URLs:', imageUrls);
 
-      // Extract panel texts and S3 URLs from the panel data (panels are always updated after regeneration)
-      // These arrays are calculated fresh each time this function is called, ensuring we get the latest data
-      const panelsToShow = panelData.map(panel => panel.panel_text || '');
-      const s3ImageUrls = panelData.map(panel => panel.aws_s3_image_url || panel.file_url);
-      
-      console.log('🔍 PANEL EXTRACTION DEBUG:');
-      console.log('  - panelData.length:', panelData.length);
-      console.log('  - panelsToShow (before filtering):', panelsToShow);
-      console.log('  - s3ImageUrls (before filtering):', s3ImageUrls);
-      console.log('  - panels with text:', panelsToShow.filter(text => text && text.trim()).length);
-      console.log('  - panels with images:', s3ImageUrls.filter(url => url).length);
-      
-      console.log('🔍 PANEL TEXT EXTRACTION:');
-      console.log('  - Total panels in panelData:', panelData.length);
-      console.log('  - Panels with text:', panelsToShow.length);
-      console.log('  - Images array length:', images.length);
-      console.log('  - Panels with images:', s3ImageUrls.filter(url => url).length);
-      console.log('  - All panel texts:', panelsToShow);
-      console.log('  - All image URLs from panel data:', s3ImageUrls);
-      
-      console.log('🔍 Extracted panel texts:', panelsToShow);
-      console.log('🔍 Extracted S3 image URLs:', s3ImageUrls);
-      
-      // Log detailed panel data for debugging
-      console.log('🔍 Detailed panel data for PDF generation:');
-      panelData.forEach((panel, index) => {
-        console.log(`Panel ${index}:`, {
-          panel_number: panel.panel_number,
-          panel_text: panel.panel_text?.substring(0, 100) + '...',
-          aws_s3_image_url: panel.aws_s3_image_url,
-          file_url: panel.file_url,
-          images_array_url: images[index],
-          panel_data_url: panel.aws_s3_image_url || panel.file_url,
-          final_image_url: panel.aws_s3_image_url || panel.file_url // Using panel data as source of truth
-        });
-      });
-
-      if (s3ImageUrls.length === 0) {
-        toast.error('No images available for PDF generation. Please wait for images to be generated.');
-        return;
+      // Validate we have the expected number of panels
+      if (panels.length !== 8) {
+        console.warn(`Expected 8 panels, but got ${panels.length}`);
       }
 
-      if (panelsToShow.length === 0) {
-        toast.error('No panel texts available for PDF generation.');
-        return;
-      }
-
-      // Ensure we have the same number of panels and images
-      const maxPanels = Math.min(panelsToShow.length, s3ImageUrls.length);
-      const alignedPanels = panelsToShow.slice(0, maxPanels);
-      const alignedS3Urls = s3ImageUrls.slice(0, maxPanels);
-      
-      console.log('🔍 PANEL ALIGNMENT DEBUG:');
-      console.log('  - panelsToShow.length:', panelsToShow.length);
-      console.log('  - s3ImageUrls.length:', s3ImageUrls.length);
-      console.log('  - maxPanels:', maxPanels);
-      console.log('  - alignedPanels.length:', alignedPanels.length);
-      console.log('  - alignedS3Urls.length:', alignedS3Urls.length);
-      console.log('  - panelsToShow (all):', panelsToShow);
-      console.log('  - s3ImageUrls (all):', s3ImageUrls);
-
-      console.log('🔍 Aligned data for PDF:', {
-        panelsCount: alignedPanels.length,
-        s3UrlsCount: alignedS3Urls.length,
-        panels: alignedPanels,
-        s3Urls: alignedS3Urls
-      });
-
-      // Use S3 URLs directly (generateComicPDF will handle the conversion)
-      const finalImageUrls = alignedS3Urls.filter((url): url is string => url !== null);
-      
-      console.log('🔍 About to call generateComicPDF with panel texts:', {
-        panelTextsLength: alignedPanels.length,
-        imageUrlsLength: finalImageUrls.length,
-        characterName,
-        genre: curatedStoryResult.genre,
-        viewMode,
-        firstPanelText: alignedPanels[0]?.substring(0, 50) + '...',
-        firstImageUrl: finalImageUrls[0]?.substring(0, 50) + '...',
-        allPanelTexts: alignedPanels
-      });
-      
-      // Debug: Show exactly what's being passed to generateComicPDF
-      console.log('🔍 FINAL DATA FOR PDF GENERATION:');
-      console.log('  - alignedPanels (panel texts):', alignedPanels);
-      console.log('  - finalImageUrls (image URLs):', finalImageUrls);
-      console.log('  - alignedPanels.length:', alignedPanels.length);
-      console.log('  - finalImageUrls.length:', finalImageUrls.length);
-      console.log('  - All panel texts count:', alignedPanels.filter(text => text && text.trim()).length);
-      console.log('  - All image URLs count:', finalImageUrls.filter(url => url && url.trim()).length);
-      
-      // Debug: Log each panel text and image URL
-      console.log('🔍 DETAILED PANEL DATA FOR PDF:');
-      alignedPanels.forEach((panelText, index) => {
-        console.log(`Panel ${index + 1}:`, {
-          text: panelText?.substring(0, 100) + '...',
-          imageUrl: finalImageUrls[index]?.substring(0, 50) + '...',
-          hasText: !!panelText,
-          hasImage: !!finalImageUrls[index]
-        });
-      });
-
-      // Generate PDF using panel texts array (not raw story content)
-      const pdf = await generateComicPDF(
-        alignedPanels, // Use panel texts array directly
+      // Generate PDF with all panels (including those without images)
+      const pdf = await generateCuratedStoryPDF(
+        panels,            // Pass the entire panels array
         characterName,
         characterPhoto,
         curatedStoryResult.genre || 'adventure',
-        finalImageUrls, // Use S3 URLs directly
-        '', // No API key needed for curated stories
-        cleanPanelTextForDisplay,
         viewMode,
         curatedStoryResult.title || `${characterName}'s Curated Story`
       );
@@ -441,7 +323,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
       toast.success(`Curated Story PDF (${viewMode} view) downloaded successfully!`);
       
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('Error generating curated story PDF:', error);
       toast.error('Failed to generate PDF. Please try again.');
     }
   };
@@ -477,21 +359,35 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
         const updatedPanel = {
           ...panel,
           panel_text: newPanelText || panel.panel_text, // Update panel text if provided
-          aws_s3_image_url: result.panel.aws_s3_image_url,
+          aws_s3_image_url: result.panel.aws_s3_image_url, // This is the key field for PDF generation
           minimax_image_url: result.panel.file_url,
           file_url: result.panel.file_url, // Also update the file_url field
           status: result.panel.status,
           updated_at: new Date().toISOString()
         };
         
-        setPanels(prev => prev.map((p, i) => 
-          i === index ? updatedPanel : p
-        ));
+        console.log('🔄 Updated panel data:', updatedPanel);
         
-        // Use handleImageGenerated to update both image and panel text
-        handleImageGenerated(index, newImageUrl, newPanelText);
+        setPanels(prev => {
+          const newPanels = prev.map((p, i) => 
+            i === index ? updatedPanel : p
+          );
+          console.log('🔄 New panels array after update:', newPanels);
+          console.log('🔄 Updated panel at index', index, ':', newPanels[index]);
+          console.log('🔄 Panel aws_s3_image_url:', newPanels[index]?.aws_s3_image_url);
+          return newPanels;
+        });
         
-        toast.success(`Panel ${index} regenerated successfully!`);
+        // Update images array to keep it in sync
+        setImages(prev => {
+          const newImages = prev.map((img, i) => 
+            i === index ? newImageUrl : img
+          );
+          console.log('🔄 New images array after update:', newImages);
+          return newImages;
+        });
+        
+        toast.success(`Panel ${index + 1} regenerated successfully!`);
       } else {
         throw new Error('No panel data in response or regeneration failed');
       }
@@ -516,22 +412,31 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
     
     if (url) {
       // Update panel data with new S3 URL (this is the source of truth for PDF generation)
-      setPanels(prev => prev.map((p, i) => 
-        i === index ? {
-          ...p,
-          panel_text: panelText || p.panel_text, // Update panel text if provided
-          aws_s3_image_url: url,
-          minimax_image_url: url,
-          file_url: url, // Also update the file_url field
-          status: 'completed',
-          updated_at: new Date().toISOString()
-        } : p
-      ));
+      setPanels(prev => {
+        const newPanels = prev.map((p, i) => 
+          i === index ? {
+            ...p,
+            panel_text: panelText || p.panel_text, // Update panel text if provided
+            aws_s3_image_url: url, // This is the key field for PDF generation
+            minimax_image_url: url,
+            file_url: url, // Also update the file_url field
+            status: 'completed',
+            updated_at: new Date().toISOString()
+          } : p
+        );
+        console.log(`🔄 Panel ${index} updated with aws_s3_image_url:`, url);
+        console.log(`🔄 Updated panel data:`, newPanels[index]);
+        return newPanels;
+      });
       
       // Update images array (kept in sync with panels for backward compatibility)
-      setImages(prev => prev.map((img, i) => 
-        i === index ? url : img
-      ));
+      setImages(prev => {
+        const newImages = prev.map((img, i) => 
+          i === index ? url : img
+        );
+        console.log(`🔄 Images array updated for panel ${index}:`, newImages);
+        return newImages;
+      });
       
       // Update locked status
       setLockedPanels(prev => prev.map((locked, i) => 
@@ -551,16 +456,16 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
 
   // Refresh curated story data to get latest panel information
   const refreshCuratedStoryData = async () => {
-    if (!curatedStoryResult.story_id) {
+    if (!curatedStoryResult.story.id) {
       console.log('❌ No story_id available for refresh');
       return;
     }
     
     try {
-      console.log('🔄 Refreshing curated story data for story_id:', curatedStoryResult.story_id);
+      console.log('🔄 Refreshing curated story data for story_id:', curatedStoryResult.story.id);
       
       // Fetch the latest story data
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/curated-stories/${curatedStoryResult.story_id}/`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/curated-stories/${curatedStoryResult.story.id}/`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -991,16 +896,12 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
             onCuratedDownloadPDF={handleDownloadPDF}
           />
           
-          {/* Debug info for payment status */}
-          <div className="text-xs text-gray-500 mt-2 p-2 bg-gray-100 rounded">
-            Debug: localIsPaid = {localIsPaid.toString()}, isPaid prop = {isPaid.toString()}
-          </div>
-
+        
 
 
           {/* Action Buttons using StoryActions component */}
           <StoryActions
-            story={curatedStoryResult.story_content || ''}
+            story={generateStoryContentFromPanels()}
             characterName={characterName}
             characterPhoto={characterPhoto}
             genre={curatedStoryResult.genre || 'adventure'}
@@ -1039,6 +940,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
           console.log('❌ PricingModal onPaymentCancellation called');
           handlePaymentCancellation();
         }}
+        storyId={curatedStoryResult.story.id}
       />
     </>
   );

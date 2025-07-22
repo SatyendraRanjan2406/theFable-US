@@ -78,6 +78,10 @@ const ComicPanel: React.FC<ComicPanelProps> = ({
     // Reset image load failure state when imageUrl changes
     setImageLoadFailed(false);
     
+    console.log(`🎨 ComicPanel ${panelIndex}: useEffect triggered`);
+    console.log(`🎨 ComicPanel ${panelIndex}: panelData =`, panelData);
+    console.log(`🎨 ComicPanel ${panelIndex}: imageUrl =`, imageUrl);
+    
     // If we have a provided imageUrl, use it directly
     if (imageUrl) {
       setSceneImage(imageUrl);
@@ -88,6 +92,9 @@ const ComicPanel: React.FC<ComicPanelProps> = ({
     // If we have panel data with image URLs, use them
     if (panelData) {
       const panelImageUrl = panelData.aws_s3_image_url || panelData.minimax_image_url;
+      console.log(`🎨 ComicPanel ${panelIndex}: panelData.aws_s3_image_url =`, panelData.aws_s3_image_url);
+      console.log(`🎨 ComicPanel ${panelIndex}: panelData.minimax_image_url =`, panelData.minimax_image_url);
+      console.log(`🎨 ComicPanel ${panelIndex}: panelImageUrl =`, panelImageUrl);
       if (panelImageUrl) {
         setSceneImage(panelImageUrl);
         setImageLoading(false);

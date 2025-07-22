@@ -203,14 +203,14 @@ const StoryActions: React.FC<StoryActionsProps> = ({
           <Download className="w-4 h-4 mr-2" />
           Download TXT
         </Button>
-        <Button
+        {/* <Button
           onClick={handleDownloadPDF}
           variant="outline"
           className="flex-1 border-2 border-blue-300 text-blue-700 hover:bg-blue-50"
         >
           <FileText className="w-4 h-4 mr-2" />
           Download Comic PDF
-        </Button>
+        </Button> */}
         {/* <Button
           onClick={handleDownloadImages}
           variant="outline"

@@ -1258,12 +1258,12 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
               console.log('Curated story generation result:', result);
               console.log('Story content:', result.story_content);
               console.log('Panels:', result.panels);
-              console.log('Story ID:', result.story_id);
+              console.log('Story ID:', result.story.id);
 
               // Update progress
               setCuratedGenerationProgress(3);
               setCuratedCurrentStep('Finalizing your story...');
-
+              debugger
               // Store the result
               setCuratedStoryResult(result);
               

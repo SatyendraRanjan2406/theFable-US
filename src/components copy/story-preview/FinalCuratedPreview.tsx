@@ -783,13 +783,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
             isCuratedStory={true}
             onCuratedDownloadPDF={handleDownloadPDF}
           />
-          
-          {/* Debug info for payment status */}
-          <div className="text-xs text-gray-500 mt-2 p-2 bg-gray-100 rounded">
-            Debug: localIsPaid = {localIsPaid.toString()}, isPaid prop = {isPaid.toString()}
-          </div>
-
-
+     
 
           {/* Action Buttons using StoryActions component */}
           <StoryActions
@@ -832,6 +826,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
           console.log('❌ PricingModal onPaymentCancellation called');
           handlePaymentCancellation();
         }}
+        storyId={curatedStoryResult.story_id}
       />
     </>
   );
