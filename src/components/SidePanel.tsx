@@ -23,12 +23,16 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BASE_URL } from '@/config/api';
 
+
 interface Story {
   id: string;
   title: string;
   created_at: string;
   panels_count: number;
   is_paid: boolean;
+  referred_curated_story_id?: string; // To differentiate curated stories
+  character_name?: string; // For curated stories
+  genre?: string; // For curated stories
   user: {
     id: number;
     email: string;
@@ -67,8 +71,8 @@ const SidePanel: React.FC<SidePanelProps> = ({ isOpen, onToggle, onLoginClick })
 
       if (response.ok) {
         const data = await response.json();
-        // Take only the first 5 stories
-        setRecentStories(data.slice(0, 5));
+        // Take only the first 10 stories (to show both AI and curated)
+        setRecentStories(data.slice(0, 10));
       }
     } catch (error) {
       console.error('Failed to fetch recent stories:', error);
@@ -242,55 +246,134 @@ const SidePanel: React.FC<SidePanelProps> = ({ isOpen, onToggle, onLoginClick })
                     </>
                   ) : recentStories.length > 0 ? (
                     <>
-                      {recentStories.map((story, idx) => (
-                        <div
-                          key={story.id}
-                          className="p-4 bg-gradient-to-br from-white to-purple-50 rounded-xl shadow-sm border border-purple-200 cursor-pointer hover:shadow-lg transition-all duration-200 flex flex-col gap-2 group hover:scale-[1.02]"
-                          onClick={() => {
-                            if (!isAuthenticated) {
-                              onLoginClick?.();
-                              onToggle(); // Close panel
-                              return;
-                            }
-                            navigate(`/?editStoryId=${story.id}`);
-                            onToggle(); // Close panel after navigation
-                          }}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className={`p-2 rounded-lg ${story.is_paid ? 'bg-gradient-to-r from-yellow-400 to-orange-400' : 'bg-gradient-to-r from-purple-400 to-pink-400'}`}>
-                              <BookOpen className="w-4 h-4 text-white" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <span className="text-sm font-semibold text-[#333333] truncate block group-hover:text-[#8D4BE5] transition-colors">
-                                {story.title}
-                              </span>
-                              {/* Full Name Display */}
-                              <div className="flex items-center gap-1 mt-1">
-                                <User className="w-3 h-3 text-purple-400" />
-                                <span className="text-xs text-purple-600 font-medium">
-                                  {story.user?.first_name} {story.user?.last_name}
-                                </span>
-                                {story.is_paid && (
-                                  <Crown className="w-3 h-3 text-yellow-500 ml-1" />
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="text-xs text-purple-500 flex items-center gap-1">
-                              <Calendar className="w-3 h-3" /> 
-                              {formatDate(story.created_at)}
-                            </span>
-                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                              story.panels_count > 0 
-                                ? 'bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border border-purple-200' 
-                                : 'bg-purple-100 text-purple-500'
-                            }`}>
-                              {story.panels_count} panels
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                      {/* Separate AI and Curated Stories */}
+                      {(() => {
+                        const aiStories = recentStories.filter(story => !story.referred_curated_story_id);
+                        const curatedStories = recentStories.filter(story => story.referred_curated_story_id);
+                        
+                        return (
+                          <>
+                            {/* AI Stories Section */}
+                            {aiStories.length > 0 && (
+                              <>
+                                <div className="text-xs font-semibold text-purple-600 mb-2 flex items-center gap-2">
+                                  <Sparkles className="w-3 h-3" />
+                                  AI-Generated Stories
+                                </div>
+                                {aiStories.map((story, idx) => (
+                                  <div
+                                    key={`ai-${story.id}`}
+                                    className="p-4 bg-gradient-to-br from-white to-purple-50 rounded-xl shadow-sm border border-purple-200 cursor-pointer hover:shadow-lg transition-all duration-200 flex flex-col gap-2 group hover:scale-[1.02]"
+                                    onClick={() => {
+                                      if (!isAuthenticated) {
+                                        onLoginClick?.();
+                                        onToggle(); // Close panel
+                                        return;
+                                      }
+                                      navigate(`/?editStoryId=${story.id}`);
+                                      onToggle(); // Close panel after navigation
+                                    }}
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <div className={`p-2 rounded-lg ${story.is_paid ? 'bg-gradient-to-r from-yellow-400 to-orange-400' : 'bg-gradient-to-r from-purple-400 to-pink-400'}`}>
+                                        <BookOpen className="w-4 h-4 text-white" />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <span className="text-sm font-semibold text-[#333333] truncate block group-hover:text-[#8D4BE5] transition-colors">
+                                          {story.title}
+                                        </span>
+                                        {/* Full Name Display */}
+                                        <div className="flex items-center gap-1 mt-1">
+                                          <User className="w-3 h-3 text-purple-400" />
+                                          <span className="text-xs text-purple-600 font-medium">
+                                            {story.user?.first_name} {story.user?.last_name}
+                                          </span>
+                                          {story.is_paid && (
+                                            <Crown className="w-3 h-3 text-yellow-500 ml-1" />
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center justify-between mt-2">
+                                      <span className="text-xs text-purple-500 flex items-center gap-1">
+                                        <Calendar className="w-3 h-3" /> 
+                                        {formatDate(story.created_at)}
+                                      </span>
+                                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                        story.panels_count > 0 
+                                          ? 'bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border border-purple-200' 
+                                          : 'bg-purple-100 text-purple-500'
+                                      }`}>
+                                        {story.panels_count} panels
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </>
+                            )}
+
+                            {/* Curated Stories Section */}
+                            {curatedStories.length > 0 && (
+                              <>
+                                <div className="text-xs font-semibold text-purple-600 mb-2 flex items-center gap-2">
+                                  <Crown className="w-3 h-3" />
+                                  Curated Stories
+                                </div>
+                                {curatedStories.map((story, idx) => (
+                                  <div
+                                    key={`curated-${story.id}`}
+                                    className="p-4 bg-gradient-to-br from-white to-pink-50 rounded-xl shadow-sm border border-pink-200 cursor-pointer hover:shadow-lg transition-all duration-200 flex flex-col gap-2 group hover:scale-[1.02]"
+                                    onClick={() => {
+                                      if (!isAuthenticated) {
+                                        onLoginClick?.();
+                                        onToggle(); // Close panel
+                                        return;
+                                      }
+                                      navigate(`/?editStoryId=${story.id}`);
+                                      onToggle(); // Close panel after navigation
+                                    }}
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <div className={`p-2 rounded-lg ${story.is_paid ? 'bg-gradient-to-r from-yellow-400 to-orange-400' : 'bg-gradient-to-r from-pink-400 to-purple-400'}`}>
+                                        <Crown className="w-4 h-4 text-white" />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <span className="text-sm font-semibold text-[#333333] truncate block group-hover:text-[#8D4BE5] transition-colors">
+                                          {story.title}
+                                        </span>
+                                        {/* Character and Genre Display */}
+                                        <div className="flex items-center gap-1 mt-1">
+                                          <User className="w-3 h-3 text-pink-400" />
+                                          <span className="text-xs text-pink-600 font-medium">
+                                            {story.character_name} • {story.genre}
+                                          </span>
+                                          {story.is_paid && (
+                                            <Crown className="w-3 h-3 text-yellow-500 ml-1" />
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center justify-between mt-2">
+                                      <span className="text-xs text-pink-500 flex items-center gap-1">
+                                        <Calendar className="w-3 h-3" /> 
+                                        {formatDate(story.created_at)}
+                                      </span>
+                                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                        story.panels_count > 0 
+                                          ? 'bg-gradient-to-r from-pink-100 to-purple-100 text-pink-700 border border-pink-200' 
+                                          : 'bg-pink-100 text-pink-500'
+                                      }`}>
+                                        {story.panels_count} panels
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </>
+                            )}
+                          </>
+                        );
+                      })()}
+
                       <Button
                         variant="outline"
                         size="sm"
