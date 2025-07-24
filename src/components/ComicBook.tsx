@@ -449,7 +449,7 @@ const ComicBook: React.FC<ComicBookProps> = ({
             ) : (
               <>
                 <FileText className="w-4 h-4 mr-2" />
-                Download PDFa (Split)
+                Download PDF (Split)
               </>
             )}
           </Button>
