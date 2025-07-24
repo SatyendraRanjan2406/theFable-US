@@ -171,6 +171,7 @@ export const useFormData = () => {
       setFormData(prev => ({ ...prev, photo: null }));
     } finally {
       setIsCompressingPhoto(false);
+
     }
   };
 

@@ -44,6 +44,7 @@ interface StoryPreviewProps {
   storyId?: string; // NEW: story ID for edit mode
   panels?: any[]; // NEW: panels data from API for edit mode
   isPaid?: boolean; // NEW: payment status for edit mode
+
 }
 
 const StoryPreview: React.FC<StoryPreviewProps> = ({
@@ -75,6 +76,7 @@ const StoryPreview: React.FC<StoryPreviewProps> = ({
   storyId,
   panels,
   isPaid,
+
 }) => {
   // All state and logic is now lifted to Index.tsx or passed down.
   // This component now primarily acts as a router for different states.
@@ -119,6 +121,7 @@ const StoryPreview: React.FC<StoryPreviewProps> = ({
       storyId={storyId}
       panels={panels}
       isPaid={isPaid}
+  
     />
   );
 };

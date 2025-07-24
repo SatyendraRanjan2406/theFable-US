@@ -30,10 +30,6 @@ import Footer from '@/components/Footer';
 import { trackPhotosRegenerated, trackStoryRegenerated } from '@/utils/gtm';
 import { SAMPLE_PDFS } from '@/components/AppHeader';
 import { BASE_URL } from '@/config/api';
-import { generateCuratedStory } from '@/utils/curatedStoryApi';
-
-// Define a type for the image state
-type ImageState = string | null | 'error' | 'generating';
 
 // Carousel images for hero section
 const carouselImages = [
@@ -102,6 +98,12 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Determine if we're in edit mode or create mode
+  // Edit mode: URL contains editStoryId query parameter
+  // Create mode: URL does not contain editStoryId query parameter
+  const editStoryId = searchParams.get('editStoryId');
+  const isEditMode = !!editStoryId;
 
   // 2. Custom hooks
   const {
@@ -145,13 +147,9 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     setFormData,
   } = useFormData();
 
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [processedImageUrl, setProcessedImageUrl] = useState('');
   const [interruptedGeneration, setInterruptedGeneration] = useState(false);
-  const [imageGenerationFailed, setImageGenerationFailed] = useState(false);
   const [lockedPanels, setLockedPanels] = useState<boolean[]>([]); // Will be dynamically initialized based on story
-  const [isRegenerating, setIsRegenerating] = useState(false);
-
+  const [exising_photo_url, setExising_photo_url] = useState('');
   const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
   const workflow = useStoryWorkflow();
@@ -337,9 +335,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
           console.log('💰 Story data isPaid type:', typeof storyData.isPaid);
           console.log('💰 Story data is_paid type:', typeof storyData.is_paid);
           
-          // Check if this is a curated story
-          const isCuratedStory = storyData.referred_curated_story_id || storyData.curated_story_id;
-          console.log('🔍 Is curated story:', isCuratedStory);
+
           
           // Store panels data for ComicBook component
           setPanelsData(panels);
@@ -347,7 +343,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
           // Set payment status from story data - check both camelCase and snake_case
           const paymentStatus = storyData.is_paid || false;
           setIsPaid(paymentStatus);
-
+          
           
           // Validate response structure
           if (!panelsResponse.panels) {
@@ -387,7 +383,8 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
             }).join('\n\n');
             
             console.log('📝 Reconstructed story:', reconstructedStory.substring(0, 200) + '...');
-            
+            console.log('👤 Form data:', formData);
+            debugger;
             // Set form data with story information
             setFormData((prev: any) => ({
               ...prev,
@@ -397,11 +394,12 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
               genre: storyData.genre || storyData.story_genre || 'adventure',
               storyOutline: '', // We'll reconstruct this if needed
             }));
-            
+            setExising_photo_url(storyData.photo_url);
             // Set story state
             setGeneratedTitle(storyData.title || storyData.story_title || `${characterName}'s Story`);
             setStorybookText(reconstructedStory);
-            
+            console.log('👤 Form data:', formData);
+
             // Extract image URLs, preferring S3 URLs over Minimax URLs
             const imageUrls = panels.map((p: any) => {
               console.log(`🖼️ Panel ${p.panel_number} images:`, {
@@ -416,45 +414,24 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
             // Set story ID for editing
             setStoryId(editStoryId);
             
-            // Handle curated stories differently
-            if (isCuratedStory) {
-              console.log('📚 Processing curated story for editing');
-              
-              // Set curated story for edit
-              setCuratedStoryForEdit(storyData);
-              
-              // Set curated story result
-              setCuratedStoryResult({
-                story_id: storyData.id,
-                story_content: reconstructedStory,
-                panels: panels || [],
-                title: storyData.title || storyData.story_title,
-                genre: storyData.genre || storyData.story_genre,
-              });
-              
-              // Navigate to curated final preview
-              setStep('curated-final');
-              setShowStoryCreation(true);
-              console.log('🎭 Set step to curated-final for curated story');
-            } else {
-              console.log('🤖 Processing AI story for editing');
-              
-              // Initialize locked panels based on actual story length
-              const totalPanels = panels.length;
-              const initialLockedPanels = paymentStatus ?  Array(totalPanels).fill(false) :  Array(totalPanels).fill(false).map((_, idx) => idx >=  import.meta.env.VITE_PREVIEW_IMAGE_COUNT); // First 4 free, rest locked
-              setLockedPanels(initialLockedPanels);
-              console.log('🔒 Setting lockedPanels:', {
-                totalPanels,
-                paymentStatus,
-                initialLockedPanels,
-                previewCount: import.meta.env.VITE_PREVIEW_IMAGE_COUNT
-              });
-              
-              // Show story creation and go to final step
-              setShowStoryCreation(true);
-              setStep('final');
-              console.log('🎭 Set step to final for AI story');
-            }
+            // Process AI story for editing (curated stories handled separately)
+            console.log('🤖 Processing AI story for editing');
+            
+            // Initialize locked panels based on actual story length
+            const totalPanels = panels.length;
+            const initialLockedPanels = paymentStatus ?  Array(totalPanels).fill(false) :  Array(totalPanels).fill(false).map((_, idx) => idx >=  import.meta.env.VITE_PREVIEW_IMAGE_COUNT); // First 4 free, rest locked
+            setLockedPanels(initialLockedPanels);
+            console.log('🔒 Setting lockedPanels:', {
+              totalPanels,
+              paymentStatus,
+              initialLockedPanels,
+              previewCount: import.meta.env.VITE_PREVIEW_IMAGE_COUNT
+            });
+            
+            // Show story creation and go to final step
+            setShowStoryCreation(true);
+            setStep('final');
+            console.log('🎭 Set step to final for AI story');
             
             console.log('✅ Story loaded successfully for editing');
             console.log('🔄 Setting isLoadingPanels to false');
@@ -501,6 +478,232 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     } else {
       console.log('🔍 No editStoryId found in URL params');
     }
+  }, [searchParams, location.search, isAuthenticated]);
+
+  // Edit flow for curated stories - separate from AI stories
+  useEffect(() => {
+    const editCuratedStoryId = searchParams.get('editCuratedStoryId');
+    console.log('🔍 useEffect triggered - editCuratedStoryId:', editCuratedStoryId);
+    console.log('🔍 Current searchParams:', searchParams.toString());
+    
+    // Add cleanup flag to prevent race conditions
+    let isCancelled = false;
+    
+    if (editCuratedStoryId) {
+      console.log('🔄 Starting to load curated story for editing:', editCuratedStoryId);
+      console.log('🔐 Authentication state:', { isAuthenticated, hasToken: !!localStorage.getItem('authToken') });
+      
+      // Check if user is authenticated
+      if (!isAuthenticated) {
+        console.error('❌ User not authenticated');
+        console.log('🔐 Checking localStorage for authToken...');
+        const token = localStorage.getItem('authToken');
+        if (token) {
+          console.log('🔐 Token found in localStorage, but isAuthenticated is false. This might be a timing issue.');
+          // Try to proceed anyway if token exists
+          console.log('🔄 Proceeding with token from localStorage...');
+        } else {
+          toast.error('Please log in to edit curated stories');
+          return;
+        }
+      }
+      
+      // Fetch curated story data and populate state
+      const fetchCuratedStory = async () => {
+        setIsLoadingCuratedStory(true);
+        console.log('🔄 Starting curated story loading...');
+        
+        // Small delay to ensure authentication state is properly initialized
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Double-check authentication after delay
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+          console.error('❌ No auth token found after delay');
+          toast.error('Please log in to edit curated stories');
+          if (!isCancelled) {
+            setIsLoadingCuratedStory(false);
+          }
+          return;
+        }
+        
+        try {
+          // Check if cancelled before proceeding
+          if (isCancelled) {
+            console.log('🔄 Curated story loading cancelled');
+            return;
+          }
+          
+          console.log('🔄 Loading curated story for editing:', editCuratedStoryId);
+          
+          // Fetch story data using the same API as AI stories
+          console.log('🔗 Story API URL:', `${BASE_URL}/api/auth/stories/${editCuratedStoryId}`);
+          const storyRes = await fetch(`${BASE_URL}/api/auth/stories/${editCuratedStoryId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!storyRes.ok) {
+            throw new Error(`HTTP error! status: ${storyRes.status}`);
+          }
+
+          const storyData = await storyRes.json();
+          console.log('📚 Curated story data loaded:', storyData);
+          
+          if (!storyData) {
+            throw new Error('No curated story data received');
+          }
+          
+          // Fetch panels data using the same API as AI stories
+          console.log('🔗 Panels API URL:', `${BASE_URL}/api/auth/stories/${editCuratedStoryId}/panels`);
+          const panelsRes = await fetch(`${BASE_URL}/api/auth/stories/${editCuratedStoryId}/panels`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!panelsRes.ok) {
+            throw new Error(`HTTP error! status: ${panelsRes.status}`);
+          }
+
+          const panelsResponse = await panelsRes.json();
+          console.log('📚 Curated story panels response:', panelsResponse);
+          
+          // Extract panels from response - handle different response structures
+          let panels = [];
+          if (Array.isArray(panelsResponse)) {
+            panels = panelsResponse;
+          } else if (panelsResponse && Array.isArray(panelsResponse.panels)) {
+            panels = panelsResponse.panels;
+          } else if (panelsResponse && panelsResponse.data && Array.isArray(panelsResponse.data)) {
+            panels = panelsResponse.data;
+          } else {
+            console.error('❌ Invalid panels response structure:', panelsResponse);
+            throw new Error('Invalid panels response structure from API');
+          }
+          
+          console.log('📚 Extracted panels array:', panels);
+          
+          if (!panels || panels.length === 0) {
+            throw new Error('No panels found in the response');
+          }
+          
+          // Reconstruct story text from panels
+          const reconstructedStory = panels.map((panel: any, index: number) => {
+            let cleanText = panel.panel_text || '';
+            cleanText = cleanText.replace(/\*\*/g, '');
+            cleanText = cleanText.replace(/\*/g, '');
+            cleanText = cleanText.replace(/Page \d+ - [^:]+:\s*/g, '');
+            cleanText = cleanText.replace(/Panel \d+:\s*/g, '');
+            cleanText = cleanText.replace(/\n+/g, ' ').trim();
+            return `Panel ${index + 1}: ${cleanText}`;
+          }).join('\n\n');
+          
+          // Set curated story for edit
+          setCuratedStoryForEdit(storyData);
+          
+          // Set curated story result with proper panel_id mapping
+          const curatedPanels = panels.map(panel => ({
+            ...panel,
+            panel_id: panel.panel_id || panel.id, // Ensure panel_id is set for regeneration
+            id: panel.id || panel.panel_id, // Ensure id is set
+          }));
+          
+          console.log('🔍 Curated panels with panel_id mapping:', curatedPanels.map(p => ({
+            panel_number: p.panel_number,
+            panel_id: p.panel_id,
+            id: p.id,
+            has_aws_url: !!p.aws_s3_image_url,
+            has_file_url: !!p.file_url
+          })));
+          
+          // Extract character information from panels response (edit mode) or story data (fallback)
+          const characterName = panelsResponse.story?.character || storyData.character || storyData.name;
+          const characterPhoto = panelsResponse.story?.photo_url || storyData.photo_url;
+          
+          console.log('🔍 Character info extracted:', {
+            from_panels_response: {
+              name: panelsResponse.story?.character,
+              photo_url: panelsResponse.story?.photo_url
+            },
+            from_story_data: {
+              name: storyData.character || storyData.name,
+              photo_url: storyData.photo_url
+            },
+            final: {
+              characterName,
+              characterPhoto
+            }
+          });
+          
+          setCuratedStoryResult({
+            story_id: storyData.id,
+            story_content: reconstructedStory,
+            panels: curatedPanels,
+            title: storyData.title || storyData.story_title,
+            genre: storyData.genre || storyData.story_genre,
+            // Add character information from panels response (edit mode) or story data (fallback)
+            character_name: characterName,
+            photo_url: characterPhoto,
+          });
+          
+          // Set payment status
+          setIsPaid(storyData.is_paid || false);
+          
+          // Check if cancelled before setting state
+          if (isCancelled) {
+            console.log('🔄 Curated story loading cancelled, not setting state');
+            return;
+          }
+          
+          // Navigate to curated final preview
+          setStep('curated-final');
+          setShowStoryCreation(true);
+          
+          console.log('✅ Curated story loaded successfully for editing');
+          setIsLoadingCuratedStory(false);
+          
+        } catch (err) {
+          console.error('❌ Error loading curated story for editing:', err);
+          
+          // Show user-friendly error message
+          let errorMessage = 'Could not load curated story for editing';
+          if (err instanceof Error) {
+            if (err.message.includes('401')) {
+              errorMessage = 'Please log in to edit curated stories';
+            } else if (err.message.includes('404')) {
+              errorMessage = 'Curated story not found';
+            } else if (err.message.includes('403')) {
+              errorMessage = 'You do not have permission to edit this curated story';
+            } else {
+              errorMessage = `Error: ${err.message}`;
+            }
+          }
+          
+          // Check if cancelled before setting state
+          if (isCancelled) {
+            console.log('🔄 Curated story loading cancelled, not setting error state');
+            return;
+          }
+          
+          console.log('🔄 Setting isLoadingCuratedStory to false (error)');
+          toast.error(errorMessage);
+          setIsLoadingCuratedStory(false);
+        }
+      };
+      fetchCuratedStory();
+    } else {
+      console.log('🔍 No editCuratedStoryId found in URL params');
+    }
+    
+    // Cleanup function to prevent race conditions
+    return () => {
+      isCancelled = true;
+      setIsLoadingCuratedStory(false);
+    };
   }, [searchParams, location.search, isAuthenticated]);
 
   // Additional effect to handle editStoryId on mount and URL changes
@@ -603,6 +806,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
   const handleLoginSuccess = () => {
     login();
     setIsLoginModalOpen(false);
+    setIsLoadingCuratedStory(false); // Reset curated story loading state
     // toast.success('Login successful! Welcome back.');
     handleCreateStoryClick();
   };
@@ -658,8 +862,8 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
   const handleBackToForm = () => {
     //console.log('=== Create Another Story clicked ===');
     
-    // Check if we're in edit mode (have a storyId)
-    if (storyId) {
+    // Check if we're in edit mode (have a storyId or curated story)
+    if (storyId || curatedStoryForEdit || curatedStoryResult) {
       console.log('🔄 Navigating back to stories history from edit mode');
       // Clear URL parameters and navigate back to stories history
       setSearchParams({});
@@ -680,6 +884,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     setLockedPanels([]); // Reset to empty - will be dynamically initialized when story is ready
     setRegeneratingPanels({}); // Reset regenerating states
     setIsCreatingMagic(false); // Reset magic state
+    setIsLoadingCuratedStory(false); // Reset curated story loading state
     // Reset form data to give user a clean form
     resetFormData();
     // Clear image generation cache for fresh start
@@ -706,6 +911,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
 
   const handleCuratedStoryBack = () => {
     setSelectedCuratedStory(null);
+    setIsLoadingCuratedStory(false); // Reset curated story loading state
   };
 
   const handleIllustrationsReady = (story: string, images: string[], panelData?: Array<{
@@ -894,6 +1100,10 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     console.log('🔍 generateLockedImages called with forcePaid:', forcePaid);
     console.log('🔍 Current isPaid state:', isPaid);
     
+    // Check if this is a curated story
+    const isCuratedStory = curatedStoryForEdit || curatedStoryResult;
+    console.log('🔍 Is curated story:', !!isCuratedStory);
+    
     // Prevent generation if payment hasn't been made (unless forced)
     if (!isPaid && !forcePaid) {
       console.error('❌ BLOCKED: Attempting to generate locked images without payment!');
@@ -920,68 +1130,139 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     
     console.log('🎨 Generating images for', panelsToGenerate.length, 'locked panels');
   
-    // 2. Process in chunks of 2
-    const chunkSize = 2;
-    for (let i = 0; i < panelsToGenerate.length; i += chunkSize) {
-      const chunk = panelsToGenerate.slice(i, i + chunkSize);
+    if (isCuratedStory) {
+      // Use curated story generation flow (same as FinalCuratedPreview)
+      console.log('🔄 Using curated story generation flow');
       
-      const chunkPanelIndices = chunk.map((_, chunkIndex) => previewCount + i + chunkIndex);
-      
-      // Set "Updating illustration..." state for the current chunk
-      toast.info(`Generating illustrations for panels ${chunkPanelIndices.map(p => p + 1).join(' & ')}...`);
-      setRegeneratingPanels(prev => {
-        const newRegen = { ...prev };
-        chunkPanelIndices.forEach(idx => { newRegen[idx] = true; });
-        return newRegen;
-      });
+      // Process one by one instead of chunks (same as FinalCuratedPreview)
+      for (let i = 0; i < panelsToGenerate.length; i++) {
+        const panel = panelsToGenerate[i];
+        const overallIndex = previewCount + i; // This is the actual index in the images array
+        
+        console.log(`🎨 Generating image for panel ${overallIndex} (ID: ${panel.id})`);
+        
+        // Set "Good things take time..." state for the current panel being generated
+        toast.info(`Generating illustration for panel ${overallIndex}...`);
+        setRegeneratingPanels(prev => {
+          const newRegen = { ...prev };
+          newRegen[overallIndex] = true; // Only set the current panel as regenerating
+          return newRegen;
+        });
 
-      const chunkPromises = chunk.map(async (panel, chunkIndex) => {
-        const overallIndex = previewCount + i + chunkIndex; // This is the actual index in the storybookImages array
-        
-        console.log(`🎨 Generating image for panel ${overallIndex + 1} (ID: ${panel.id})`);
-        
         try {
-          // Get character image base64 for subject reference
-          const characterImageBase64 = formData.photo ? await fileToBase64(formData.photo) : undefined;
-          const characterImageType = formData.photo?.type;
+          const { regenerateCuratedPanel } = await import('@/utils/curatedStoryApi');
+          const result = await regenerateCuratedPanel(panel.panel_id || panel.id);
           
-          const result = await generatePanelImage(panel.id, "16:9", 1, panel.panel_text, panel.panel_number, characterImageBase64, characterImageType);
-          
-          if (result.success && result.image_url) {
-            console.log(`✅ Panel image generated successfully:`, {
-              panel_id: result.panel_id,
-              panel_number: result.panel_number,
-              status: result.status,
-              image_url: result.image_url
+          if (result.success && result.panel) {
+            console.log(`✅ Panel ${overallIndex} image generated successfully:`, {
+              panel_id: result.panel.panel_id,
+              panel_number: result.panel.panel_number,
+              status: result.panel.status,
+              image_url: result.panel.aws_s3_image_url || result.panel.file_url
             });
-            return { status: 'fulfilled' as const, value: result.image_url, index: overallIndex };
+            
+            // Update the panel with the generated image and panel text
+            handleImageGenerated(
+              overallIndex, 
+              result.panel.aws_s3_image_url || result.panel.file_url
+            );
+            
+            // Update panels data with new information
+            const updatedPanel = {
+              ...panel,
+              panel_text: result.panel.panel_text || panel.panel_text,
+              aws_s3_image_url: result.panel.aws_s3_image_url,
+              minimax_image_url: result.panel.file_url,
+              file_url: result.panel.file_url,
+              status: result.panel.status,
+              updated_at: new Date().toISOString()
+            };
+            
+            setPanelsData(prev => prev.map((p, idx) => 
+              idx === overallIndex ? updatedPanel : p
+            ));
           } else {
-            throw new Error(result.error || 'Failed to generate image');
+            throw new Error('No panel data in response or regeneration failed');
           }
         } catch (error) {
-          console.error(`❌ Failed to generate image for panel ${overallIndex + 1} (ID: ${panel.id}):`, error);
-          return { status: 'rejected' as const, reason: error, index: overallIndex };
+          console.error(`❌ Failed to generate image for panel ${overallIndex} (ID: ${panel.id}):`, error);
+          handleImageGenerated(overallIndex, null); // Mark as failed, but still update progress
         }
-      });
-
-      const results = await Promise.all(chunkPromises);
-
-      // Process results of the chunk
-      results.forEach(result => {
-        // Always call handleImageGenerated, even on error
-        if (result.status === 'fulfilled') {
-          handleImageGenerated(result.index, result.value);
-        } else {
-          handleImageGenerated(result.index, null); // Mark as failed, but still update progress
-        }
-      });
+        
+        // Clear "Good things take time..." state for the processed panel
+        setRegeneratingPanels(prev => {
+          const newRegen = { ...prev };
+          delete newRegen[overallIndex];
+          return newRegen;
+        });
+      }
+    } else {
+      // Use AI story generation flow (existing logic)
+      console.log('🔄 Using AI story generation flow');
       
-      // Clear "Updating illustration..." state for the processed chunk
-      setRegeneratingPanels(prev => {
-        const newRegen = { ...prev };
-        chunkPanelIndices.forEach(idx => { delete newRegen[idx]; });
-        return newRegen;
-      });
+      // 2. Process in chunks of 2
+      const chunkSize = 2;
+      for (let i = 0; i < panelsToGenerate.length; i += chunkSize) {
+        const chunk = panelsToGenerate.slice(i, i + chunkSize);
+        
+        const chunkPanelIndices = chunk.map((_, chunkIndex) => previewCount + i + chunkIndex);
+        
+        // Set "Updating illustration..." state for the current chunk
+        toast.info(`Generating illustrations for panels ${chunkPanelIndices.map(p => p + 1).join(' & ')}...`);
+        setRegeneratingPanels(prev => {
+          const newRegen = { ...prev };
+          chunkPanelIndices.forEach(idx => { newRegen[idx] = true; });
+          return newRegen;
+        });
+
+        const chunkPromises = chunk.map(async (panel, chunkIndex) => {
+          const overallIndex = previewCount + i + chunkIndex; // This is the actual index in the storybookImages array
+          
+          console.log(`🎨 Generating image for panel ${overallIndex + 1} (ID: ${panel.id})`);
+          
+          try {
+            // Get character image base64 for subject reference
+            const characterImageBase64 = formData.photo ? await fileToBase64(formData.photo) : undefined;
+            const characterImageType = formData.photo?.type;
+            
+            const result = await generatePanelImage(panel.id, "16:9", 1, panel.panel_text, panel.panel_number, characterImageBase64, characterImageType);
+            
+            if (result.success && result.image_url) {
+              console.log(`✅ Panel image generated successfully:`, {
+                panel_id: result.panel_id,
+                panel_number: result.panel_number,
+                status: result.status,
+                image_url: result.image_url
+              });
+              return { status: 'fulfilled' as const, value: result.image_url, index: overallIndex };
+            } else {
+              throw new Error(result.error || 'Failed to generate image');
+            }
+          } catch (error) {
+            console.error(`❌ Failed to generate image for panel ${overallIndex + 1} (ID: ${panel.id}):`, error);
+            return { status: 'rejected' as const, reason: error, index: overallIndex };
+          }
+        });
+
+        const results = await Promise.all(chunkPromises);
+
+        // Process results of the chunk
+        results.forEach(result => {
+          // Always call handleImageGenerated, even on error
+          if (result.status === 'fulfilled') {
+            handleImageGenerated(result.index, result.value);
+          } else {
+            handleImageGenerated(result.index, null); // Mark as failed, but still update progress
+          }
+        });
+        
+        // Clear "Updating illustration..." state for the processed chunk
+        setRegeneratingPanels(prev => {
+          const newRegen = { ...prev };
+          chunkPanelIndices.forEach(idx => { delete newRegen[idx]; });
+          return newRegen;
+        });
+      }
     }
 
     // After all chunks are processed and images are generated
@@ -1148,21 +1429,55 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
         let result;
         
         if (isCuratedStory) {
-          // Use curated story panel regeneration API
+          // Use curated story panel regeneration API (same as FinalCuratedPreview)
           console.log('🔄 Using curated story panel regeneration API');
           const { regenerateCuratedPanel } = await import('@/utils/curatedStoryApi');
-          result = await regenerateCuratedPanel(targetPanelId);
+          const curatedResult = await regenerateCuratedPanel(targetPanelId);
           
-          // Transform curated API response to match expected format
-          result = {
-            success: true,
-            panel_id: result.panel?.id || targetPanelId,
-            panel_number: result.panel?.panel_number || panelNumber,
-            status: result.panel?.status || 'completed',
-            image_url: result.panel?.aws_s3_image_url || result.panel?.file_url,
-            minimax_image_url: result.panel?.minimax_image_url,
-            aws_s3_image_url: result.panel?.aws_s3_image_url || result.panel?.file_url
-          };
+          console.log('Panel regeneration result:', curatedResult);
+          
+          if (curatedResult.panel) {
+            // Extract aws_s3_image_url from the nested panel object
+            const newImageUrl = curatedResult.panel.aws_s3_image_url || curatedResult.panel.file_url;
+            const newPanelText = curatedResult.panel.panel_text;
+            
+            console.log('🔄 Panel regeneration - updating panel data:', {
+              panel_id: targetPanelId,
+              old_panel_text: panelText?.substring(0, 50) + '...',
+              new_panel_text: newPanelText?.substring(0, 50) + '...',
+              aws_s3_image_url: curatedResult.panel.aws_s3_image_url,
+              file_url: curatedResult.panel.file_url,
+              newImageUrl: newImageUrl
+            });
+            
+            // Update panels data with new information
+            if (panelsData && panelsData.length > panelIndex) {
+              const updatedPanel = {
+                ...panelsData[panelIndex],
+                panel_text: newPanelText || panelsData[panelIndex].panel_text,
+                aws_s3_image_url: curatedResult.panel.aws_s3_image_url,
+                minimax_image_url: curatedResult.panel.file_url,
+                file_url: curatedResult.panel.file_url,
+                status: curatedResult.panel.status,
+                updated_at: new Date().toISOString()
+              };
+              
+              setPanelsData(prev => prev.map((p, i) => i === panelIndex ? updatedPanel : p));
+            }
+            
+            // Transform to match expected format
+            result = {
+              success: true,
+              panel_id: curatedResult.panel.id || targetPanelId,
+              panel_number: curatedResult.panel.panel_number || panelNumber,
+              status: curatedResult.panel.status || 'completed',
+              image_url: newImageUrl,
+              minimax_image_url: curatedResult.panel.minimax_image_url,
+              aws_s3_image_url: curatedResult.panel.aws_s3_image_url || curatedResult.panel.file_url
+            };
+          } else {
+            throw new Error('No panel data in response or regeneration failed');
+          }
         } else {
           // Use AI story panel regeneration API
           console.log('🔄 Using AI story panel regeneration API');
@@ -1179,13 +1494,24 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
             s3_url: result.aws_s3_image_url
           });
           handleImageGenerated(panelIndex, result.image_url);
+          
+          // Clear any error state for this panel since regeneration was successful
+          setImageGenerationErrors(prev => ({ ...prev, [panelIndex]: false }));
+          
           toast.success(`Illustration for panel ${panelIndex + 1} has been magically regenerated!`);
         } else {
           throw new Error(result.error || 'Failed to generate image');
         }
       } catch (error) {
         console.error(`❌ Failed to regenerate image for panel ${panelIndex} (ID: ${targetPanelId}):`, error);
-        toast.error(`Could not regenerate illustration for panel ${panelIndex + 1}. Please try again.`);
+        
+        // Provide specific error message for the backend issue
+        if (error instanceof Error && error.message.includes('temporarily unavailable')) {
+          toast.error(`Panel regeneration is temporarily unavailable. Please try again in a few minutes.`);
+        } else {
+          toast.error(`Could not regenerate illustration for panel ${panelIndex + 1}. Please try again.`);
+        }
+        
         handleImageGenerated(panelIndex, null);
       } finally {
         setRegeneratingPanels(prev => ({ ...prev, [panelIndex]: false }));
@@ -1378,8 +1704,22 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
       />
     );
   } else if (step === 'curated-final') {
-    content = (
-              <FinalCuratedPreview
+    console.log('🔍 Rendering curated-final step, curatedStoryResult:', curatedStoryResult);
+    // Check if curatedStoryResult is available before rendering
+    if (!curatedStoryResult || typeof curatedStoryResult !== 'object') {
+      console.log('❌ curatedStoryResult is not available, showing loading state');
+      content = (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-600"></div>
+          <div className="text-center">
+            <h3 className="text-xl font-semibold text-purple-700 mb-2">Loading Your Curated Story</h3>
+            <p className="text-gray-600">Preparing your story for editing...</p>
+          </div>
+        </div>
+      );
+    } else {
+      content = (
+        <FinalCuratedPreview
           curatedStoryResult={curatedStoryResult}
           characterName={formData.characterName}
           characterPhoto={formData.selectedPhotoForStory || (formData.photo ? URL.createObjectURL(formData.photo) : null)}
@@ -1397,7 +1737,8 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
           onPaymentSuccess={handlePaymentSuccess}
           onPaymentCancellation={handlePaymentCancellation}
         />
-    );
+      );
+    }
   } else if (step === 'outline' && currentStep === 'outline') {
     //console.log('Rendering StoryOutlineEditor');
     content = (
@@ -1547,7 +1888,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
       <StoryPreview 
         story={storybookText || generatedStory}
         characterName={formData.characterName}
-        characterPhoto={processedImageUrl || (formData.photo ? URL.createObjectURL(formData.photo) : null)}
+        characterPhoto= { isEditMode ? exising_photo_url : (formData.photo ? URL.createObjectURL(formData.photo) : null)}
         genre={formData.genre}
         isGenerating={isGeneratingStory || isGeneratingImages}
         isRegenerating={isRegeneratingStory}
@@ -1570,9 +1911,10 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
         isGeneratingImages={isGeneratingImages}
         isCreatingMagic={isCreatingMagic}
         title={generatedTitle}
-          storyId={storyId}
-          panels={panelsData}
-          isPaid={isPaid}
+        storyId={storyId}
+        panels={panelsData}
+        isPaid={isPaid}
+       
       />
     );
     }

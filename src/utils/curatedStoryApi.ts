@@ -110,6 +110,14 @@ export const regenerateCuratedPanel = async (panelId: string): Promise<any> => {
     });
 
     if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ Panel regeneration failed:', errorData);
+      
+      // Check for the specific backend error
+      if (errorData.error && errorData.error.includes('_poll_facemint_task_with_retries')) {
+        throw new Error('Panel regeneration is temporarily unavailable. Please try again later.');
+      }
+      
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 

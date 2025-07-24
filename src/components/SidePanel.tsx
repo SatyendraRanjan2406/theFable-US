@@ -33,6 +33,7 @@ interface Story {
   referred_curated_story_id?: string; // To differentiate curated stories
   character_name?: string; // For curated stories
   genre?: string; // For curated stories
+  story_genre?: string; // Story genre from API
   user: {
     id: number;
     email: string;
@@ -248,8 +249,9 @@ const SidePanel: React.FC<SidePanelProps> = ({ isOpen, onToggle, onLoginClick })
                     <>
                       {/* Separate AI and Curated Stories */}
                       {(() => {
-                        const aiStories = recentStories.filter(story => !story.referred_curated_story_id);
-                        const curatedStories = recentStories.filter(story => story.referred_curated_story_id);
+                              // Filter stories: curated stories have referred_curated_story_id OR story_genre === 'personalized'
+      const aiStories = recentStories.filter(story => !story.referred_curated_story_id && story.story_genre !== 'personalized');
+      const curatedStories = recentStories.filter(story => story.referred_curated_story_id || story.story_genre === 'personalized');
                         
                         return (
                           <>
@@ -270,6 +272,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ isOpen, onToggle, onLoginClick })
                                         onToggle(); // Close panel
                                         return;
                                       }
+                                      // AI stories use editStoryId
                                       navigate(`/?editStoryId=${story.id}`);
                                       onToggle(); // Close panel after navigation
                                     }}
@@ -329,7 +332,8 @@ const SidePanel: React.FC<SidePanelProps> = ({ isOpen, onToggle, onLoginClick })
                                         onToggle(); // Close panel
                                         return;
                                       }
-                                      navigate(`/?editStoryId=${story.id}`);
+                                      // Curated stories use editCuratedStoryId
+                                      navigate(`/?editCuratedStoryId=${story.id}`);
                                       onToggle(); // Close panel after navigation
                                     }}
                                   >

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import ComicBook from '../ComicBook';
 import StoryActions from '../StoryActions';
+import { useSearchParams } from 'react-router-dom';
 
 interface FinalPreviewProps {
   story: string;
@@ -80,6 +81,8 @@ const FinalPreview: React.FC<FinalPreviewProps> = ({
     romance: 'from-pink-400 via-rose-400 to-red-400',
     humour: 'from-yellow-400 via-orange-400 to-red-400'
   };
+
+  
 
   return (
     <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-sm h-fit rounded-2xl overflow-hidden">

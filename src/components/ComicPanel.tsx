@@ -98,6 +98,8 @@ const ComicPanel: React.FC<ComicPanelProps> = ({
       if (panelImageUrl) {
         setSceneImage(panelImageUrl);
         setImageLoading(false);
+        // Reset image load failure state when we have new image URLs from panel data
+        setImageLoadFailed(false);
         return;
       }
     }
@@ -111,6 +113,14 @@ const ComicPanel: React.FC<ComicPanelProps> = ({
     // No image available and not locked - set loading to false
     setImageLoading(false);
   }, [imageUrl, isLocked, panelIndex, panelData]);
+
+  // Reset image load failure state when panel data changes with new image URLs
+  useEffect(() => {
+    if (panelData && (panelData.aws_s3_image_url || panelData.minimax_image_url)) {
+      console.log(`🎨 ComicPanel ${panelIndex}: Resetting imageLoadFailed due to new panel data with image URLs`);
+      setImageLoadFailed(false);
+    }
+  }, [panelData?.aws_s3_image_url, panelData?.minimax_image_url, panelIndex]);
 
   // Get cleaned text for display - use panel data if available, otherwise fall back to panelText
   const displayText = cleanPanelTextForDisplay(panelData?.panel_text || panelText || '');

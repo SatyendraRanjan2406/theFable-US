@@ -233,7 +233,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
 
   // New PDF download function for FinalCuratedPreview
   const handleDownloadPDF = async (viewMode: 'grid' | 'split') => {
-    debugger; // Debugger statement added for debugging
+     // Debugger statement added for debugging
     console.log('🔍 Curated story result:', curatedStoryResult);
     console.log('🔍 FinalCuratedPreview handleDownloadPDF called:', {
       viewMode,

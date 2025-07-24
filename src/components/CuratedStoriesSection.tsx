@@ -57,16 +57,7 @@ const CuratedStoriesSection: React.FC<CuratedStoriesSectionProps> = ({ onStorySe
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">
-          Choose from Our Curated Stories
-        </h2>
-        <p className="text-gray-600">
-          Skip the form and jump straight into a pre-made adventure
-        </p>
-      </div>
-
-      <div className="grid md:grid-cols-3 gap-6">
+      {/* <div className="grid md:grid-cols-3 gap-6">
         {stories.map((story) => (
           <Card key={story.id} className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-blue-300">
             <CardHeader className="text-center">
@@ -100,7 +91,7 @@ const CuratedStoriesSection: React.FC<CuratedStoriesSectionProps> = ({ onStorySe
             </CardContent>
           </Card>
         ))}
-      </div>
+      </div> */}
 
       <AlertDialog open={isComingSoonModalOpen} onOpenChange={setIsComingSoonModalOpen}>
         <AlertDialogContent>

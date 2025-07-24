@@ -69,8 +69,49 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const [isGeneratingPremiumContent, setIsGeneratingPremiumContent] = useState(false);
   const [isCreatingMagic, setIsCreatingMagic] = useState(false);
-  const [isGeneratingImages, setIsGeneratingImages] = useState(false);
+      const [isGeneratingImages, setIsGeneratingImages] = useState(false);
   const [localIsPaid, setLocalIsPaid] = useState(isPaid);
+  
+  // Determine if we're in edit mode or create mode
+  const isEditMode = curatedStoryResult && (
+    curatedStoryResult.character_name || 
+    curatedStoryResult.photo_url || 
+    curatedStoryResult.story_id
+  );
+  
+  // Get character information based on mode
+  const displayCharacterName = isEditMode 
+    ? (curatedStoryResult?.character_name || characterName)
+    : characterName;
+    
+  const displayCharacterPhoto = isEditMode 
+    ? (curatedStoryResult?.photo_url || characterPhoto)
+    : characterPhoto;
+  
+  console.log('🎭 FinalCuratedPreview Mode Detection:', {
+    isEditMode,
+    curatedStoryResult_has_character_name: !!curatedStoryResult?.character_name,
+    curatedStoryResult_has_photo_url: !!curatedStoryResult?.photo_url,
+    curatedStoryResult_has_story_id: !!curatedStoryResult?.story_id,
+    displayCharacterName,
+    displayCharacterPhoto,
+    props_characterName: characterName,
+    props_characterPhoto: characterPhoto
+  });
+  
+  // Early return if curatedStoryResult is not available
+  if (!curatedStoryResult || typeof curatedStoryResult !== 'object') {
+    console.log('❌ FinalCuratedPreview: curatedStoryResult is undefined or invalid, showing loading state');
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-600"></div>
+        <div className="text-center">
+          <h3 className="text-xl font-semibold text-purple-700 mb-2">Loading Your Curated Story</h3>
+          <p className="text-gray-600">Preparing your story for editing...</p>
+        </div>
+      </div>
+    );
+  }
 
   const genreEmojis = {
     adventure: '🗺️',
@@ -90,6 +131,11 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
 
   // Initialize images and locked panels from curated story result
   useEffect(() => {
+    if (!curatedStoryResult || typeof curatedStoryResult !== 'object') {
+      console.log('❌ curatedStoryResult is undefined or invalid');
+      return;
+    }
+    
     if (curatedStoryResult?.panels) {
       console.log('🔍 Original curatedStoryResult:', curatedStoryResult);
       console.log('🔍 Original panels data:', curatedStoryResult.panels);
@@ -108,7 +154,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
       });
       
       // Extract all panel texts from story content to ensure we have all 8 panels
-      const extractedPanelTexts = extractPanelsFromStory(curatedStoryResult.story_content || '');
+      const extractedPanelTexts = extractPanelsFromStory(curatedStoryResult?.story_content || '');
       console.log('🔍 Extracted panel texts from story:', extractedPanelTexts);
       
       // Create a complete panel array with all 8 panels (index 0-7)
@@ -268,7 +314,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
   // Function to generate story content from panels for download and sharing
   const generateStoryContentFromPanels = (): string => {
     if (!panels || panels.length === 0) {
-      return curatedStoryResult.story_content || '';
+      return curatedStoryResult?.story_content || '';
     }
 
     // Create story content from panel texts
@@ -288,7 +334,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
       toast.error('No panel data available for PDF generation');
       return;
     }
-    debugger;
+    
     try {
       toast.info('Preparing PDF for curated story...');
       
@@ -313,12 +359,12 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
         panels,            // Pass the entire panels array
         characterName,
         characterPhoto,
-        curatedStoryResult.genre || 'adventure',
+        curatedStoryResult?.genre || 'adventure',
         viewMode,
-        curatedStoryResult.title || `${characterName}'s Curated Story`
+        curatedStoryResult?.title || `${characterName}'s Curated Story`
       );
       
-      const filename = `${characterName}-${curatedStoryResult.genre || 'curated'}-comic-${viewMode}.pdf`;
+      const filename = `${characterName}-${curatedStoryResult?.genre || 'curated'}-comic-${viewMode}.pdf`;
       pdf.save(filename);
       toast.success(`Curated Story PDF (${viewMode} view) downloaded successfully!`);
       
@@ -335,7 +381,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
 
     setRegeneratingPanels(prev => ({ ...prev, [index]: true }));
     setErrorImages(prev => ({ ...prev, [index]: false }));
-    debugger;
+    
     try {
       const result = await regenerateCuratedPanel(panel.panel_id || panel.id);
       console.log('Panel regeneration result:', result);
@@ -388,13 +434,22 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
         });
         
         toast.success(`Panel ${index + 1} regenerated successfully!`);
+        
+        // Clear any error state for this panel since regeneration was successful
+        setErrorImages(prev => ({ ...prev, [index]: false }));
       } else {
         throw new Error('No panel data in response or regeneration failed');
       }
     } catch (error) {
       console.error('Error regenerating panel:', error);
       setErrorImages(prev => ({ ...prev, [index]: true }));
-      toast.error(`Failed to regenerate panel ${index}. Please try again.`);
+      
+      // Provide specific error message for the backend issue
+      if (error instanceof Error && error.message.includes('temporarily unavailable')) {
+        toast.error(`Panel regeneration is temporarily unavailable. Please try again in a few minutes.`);
+      } else {
+        toast.error(`Failed to regenerate panel ${index + 1}. Please try again.`);
+      }
     } finally {
       setRegeneratingPanels(prev => ({ ...prev, [index]: false }));
     }
@@ -456,16 +511,16 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
 
   // Refresh curated story data to get latest panel information
   const refreshCuratedStoryData = async () => {
-    if (!curatedStoryResult.story.id) {
+    if (!curatedStoryResult?.story_id) {
       console.log('❌ No story_id available for refresh');
       return;
     }
     
     try {
-      console.log('🔄 Refreshing curated story data for story_id:', curatedStoryResult.story.id);
+      console.log('🔄 Refreshing curated story data for story_id:', curatedStoryResult.story_id);
       
       // Fetch the latest story data
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/curated-stories/${curatedStoryResult.story.id}/`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/curated-stories/${curatedStoryResult.story_id}/`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -482,7 +537,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
       // Update panels with latest data
       if (data.panels && Array.isArray(data.panels)) {
         // Extract all panel texts from story content to ensure we have all 8 panels
-        const extractedPanelTexts = extractPanelsFromStory(data.story_content || curatedStoryResult.story_content || '');
+        const extractedPanelTexts = extractPanelsFromStory(data.story_content || curatedStoryResult?.story_content || '');
         console.log('🔄 Extracted panel texts from refreshed story:', extractedPanelTexts);
         
         // Create a complete panel array with all 8 panels (index 0-7)
@@ -723,7 +778,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
         newRegen[overallIndex] = true; // Only set the current panel as regenerating
         return newRegen;
       });
-      debugger;
+      
 
       try {
         const result = await regenerateCuratedPanel(panel.panel_id || panel.id);
@@ -846,20 +901,20 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
             </p>
           </div>
 
-          {/* Character Photo Display */}
-          {characterPhoto && (
+                    {/* Character Photo Display */}
+          {displayCharacterPhoto && (
             <div className="text-center bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200 rounded-xl p-6">
               <div className="relative inline-block">
                 <img
-                  src={characterPhoto}
-                  alt={characterName}
+                  src={displayCharacterPhoto}
+                  alt={displayCharacterName}
                   className="w-32 h-32 rounded-full mx-auto object-cover border-4 border-white shadow-lg"
                 />
                 <div className="absolute -top-2 -right-2 bg-yellow-400 rounded-full p-2">
                   <span className="text-xl">⭐</span>
                 </div>
               </div>
-              <p className="text-lg font-bold text-purple-700 mt-3">Starring: {characterName}!</p>
+              <p className="text-lg font-bold text-purple-700 mt-3">Starring: {displayCharacterName}!</p>
               <p className="text-sm text-green-600 mt-2 font-medium">
                 🎭 You're the main character in this amazing adventure! 🎭
               </p>
@@ -868,10 +923,10 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
 
           {/* Story Content using ComicBook component */}
           <ComicBook
-            story={curatedStoryResult.story_content || ''}
-            genre={curatedStoryResult.genre || 'adventure'}
-            characterPhoto={characterPhoto}
-            characterName={characterName}
+            story={curatedStoryResult?.story_content || ''}
+            genre={curatedStoryResult?.genre || 'adventure'}
+            characterPhoto={displayCharacterPhoto}
+            characterName={displayCharacterName}
             getSceneImage={getSceneImage}
             loadingImages={loadingImages}
             openaiApiKey="" // Not needed for curated stories
@@ -889,7 +944,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
             isGeneratingImages={isGeneratingImages}
             lockedPanels={lockedPanels}
             isCreatingMagic={isCreatingMagic}
-            title={curatedStoryResult.title || `${characterName}'s Curated Story`}
+            title={curatedStoryResult?.title || `${characterName}'s Curated Story`}
             panels={panels}
             isPaid={localIsPaid}
             isCuratedStory={true}
@@ -902,15 +957,15 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
           {/* Action Buttons using StoryActions component */}
           <StoryActions
             story={generateStoryContentFromPanels()}
-            characterName={characterName}
-            characterPhoto={characterPhoto}
-            genre={curatedStoryResult.genre || 'adventure'}
+            characterName={displayCharacterName}
+            characterPhoto={displayCharacterPhoto}
+            genre={curatedStoryResult?.genre || 'adventure'}
             generatedImages={images}
             hfApiKey="" // Not needed for curated stories
             cleanPanelTextForDisplay={cleanPanelTextForDisplay}
             lockedPanels={lockedPanels}
             onUnlockRequest={handleUnlockRequest}
-            title={curatedStoryResult.title || `${characterName}'s Curated Story`}
+            title={curatedStoryResult?.title || `${characterName}'s Curated Story`}
             isPaid={localIsPaid}
           />
 
@@ -940,7 +995,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
           console.log('❌ PricingModal onPaymentCancellation called');
           handlePaymentCancellation();
         }}
-        storyId={curatedStoryResult.story.id}
+        storyId={curatedStoryResult?.story_id || ''}
       />
     </>
   );

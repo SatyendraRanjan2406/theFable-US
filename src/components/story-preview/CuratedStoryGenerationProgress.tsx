@@ -135,7 +135,7 @@ const CuratedStoryGenerationProgress: React.FC<CuratedStoryGenerationProgressPro
               ></div>
             </div>
             <p className="text-center text-sm text-gray-600 mt-2">
-              Step {progress} of {totalSteps}
+              Step {progress + 1} of {totalSteps} 
             </p>
           </div>
 

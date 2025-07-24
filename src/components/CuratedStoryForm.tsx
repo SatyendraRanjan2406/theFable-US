@@ -1,6 +1,7 @@
 import React from 'react';
 import CharacterDetailsForm from './CharacterDetailsForm';
 import PhotoUploadField from './PhotoUploadField';
+import { toast } from 'sonner';
 
 interface CuratedStory {
   id: string;
@@ -25,10 +26,10 @@ interface CuratedStoryFormProps {
     characterAge: string;
     characterGender: string;
     photo: File | null;
-    storyLength: [number];
     cartoonImageUrl?: string | null;
+    selectedPhotoForStory?: string | null;
   };
-  onInputChange: (field: string, value: string | [number]) => void;
+  onInputChange: (field: string, value: string) => void;
   onPhotoUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onPhotoRemove: () => void;
   onCartoonSelect?: (cartoonUrl: string) => void;
@@ -57,6 +58,12 @@ const CuratedStoryForm: React.FC<CuratedStoryFormProps> = ({
 
   const handleGenerateClick = () => {
     if (selectedStory) {
+      // Check if user has selected a photo for the story
+      if (!formData.selectedPhotoForStory) {
+        toast.error('📸 Please select a photo for your story first! Click "📖 Use for Story" button to continue.');
+        return;
+      }
+      
       // Call the curated story generation API
       onGenerateStory();
     }
@@ -110,37 +117,7 @@ const CuratedStoryForm: React.FC<CuratedStoryFormProps> = ({
             />
           </div>
 
-          {/* Story Length */}
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <span className="text-2xl">📚</span>
-              Story Length
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Story Length
-                </label>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-gray-500">Short</span>
-                  <input
-                    type="range"
-                    min="1"
-                    max="5"
-                    value={formData.storyLength[0]}
-                    onChange={(e) => onInputChange('storyLength', [parseInt(e.target.value)])}
-                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                  />
-                  <span className="text-sm text-gray-500">Long</span>
-                </div>
-                <div className="text-center mt-2">
-                  <span className="text-sm font-medium text-purple-600">
-                    {formData.storyLength[0]} Panel{formData.storyLength[0] !== 1 ? 's' : ''}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+
 
           {/* Curated Stories Selection */}
           <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl p-6">

@@ -6,6 +6,7 @@ import FormFields from './FormFields';
 import ProcessedImageDisplay from './ProcessedImageDisplay';
 import { useAuth } from '@/hooks/useAuth';
 import { trackStoryCreationStarted } from '@/utils/gtm';
+import { toast } from 'sonner';
 
 interface StoryFormProps {
   formData: {
@@ -18,6 +19,7 @@ interface StoryFormProps {
     message: string;
     storyOutline: string;
     cartoonImageUrl?: string | null;
+    selectedPhotoForStory?: string | null;
   };
   onInputChange: (field: string, value: string) => void;
   onPhotoUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -54,8 +56,13 @@ const StoryForm: React.FC<StoryFormProps> = ({
 
   const handleGenerateClick = () => {
     if (true) {//isAuthenticated) {
+      // Check if user has selected a photo for the story
+      if (!formData.selectedPhotoForStory) {
+        toast.error('📸 Please select a photo for your story first! Click "📖 Use for Story" button to continue.');
+        return;
+      }
+      
       trackStoryCreationStarted('main_cta_button');
-
       onGenerateStory();
     } else {
       onLoginClick();
