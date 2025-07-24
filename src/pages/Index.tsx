@@ -160,7 +160,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
   useEffect(() => {
     const loadCuratedStories = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/auth/curated-stories/');
+        const response = await fetch(BASE_URL+'/api/auth/curated-stories/');
         if (response.ok) {
           const data = await response.json();
           setCuratedStories(data);
