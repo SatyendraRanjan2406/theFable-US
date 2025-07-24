@@ -208,13 +208,13 @@ const FinalPreview: React.FC<FinalPreviewProps> = ({
           characterPhoto={characterPhoto}
           genre={genre}
           generatedImages={images || generatedImages}
-          hfApiKey={hfApiKey}
-          cleanPanelTextForDisplay={cleanPanelTextForDisplay}
           onRegenerateStory={onRegenerateStory}
           isRegenerating={isRegenerating}
           lockedPanels={lockedPanels}
           onUnlockRequest={onUnlockRequest}
           title={title}
+          panels={panels}
+          isPaid={isPaid}
         />
 
         <div className="text-center bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4">

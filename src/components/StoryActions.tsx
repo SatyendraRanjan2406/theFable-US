@@ -2,25 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Share, FileText, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { generateComicPDF } from '@/utils/pdfGenerator';
+import { generateCuratedStoryPDF } from '@/utils/pdfGenerator';
 import { downloadTextFile, shareOrCopyContent, downloadAllImages } from '@/utils/downloadHelpers';
-
-// Utility: Download URL as File
-async function urlToFile(url, filename) {
-  const response = await fetch(url);
-  const blob = await response.blob();
-  return new File([blob], filename, { type: blob.type });
-}
-
-// Utility: File to Base64
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+import { parseStoryToPanels } from '@/utils/storyParser';
 
 interface StoryActionsProps {
   story: string;
@@ -28,14 +12,13 @@ interface StoryActionsProps {
   characterPhoto: string | null;
   genre: string;
   generatedImages: {[key: string]: string} | (string | null)[];
-  hfApiKey: string;
-  cleanPanelTextForDisplay: (text: string) => string;
   onRegenerateStory?: () => void;
   isRegenerating?: boolean;
   lockedPanels?: boolean[];
   onUnlockRequest?: () => void;
   title?: string; // NEW: story title
   isPaid?: boolean; // NEW: payment status
+  panels?: any[]; // NEW: panels data for curated stories
 }
 
 const StoryActions: React.FC<StoryActionsProps> = ({
@@ -44,14 +27,13 @@ const StoryActions: React.FC<StoryActionsProps> = ({
   characterPhoto,
   genre,
   generatedImages,
-  hfApiKey,
-  cleanPanelTextForDisplay,
   onRegenerateStory,
   isRegenerating = false,
   lockedPanels = [],
   onUnlockRequest,
   title,
-  isPaid = false
+  isPaid = false,
+  panels
 }) => {
   // Manage local payment state like FinalCuratedPreview
   const [localIsPaid, setLocalIsPaid] = useState(isPaid);
@@ -88,48 +70,84 @@ const StoryActions: React.FC<StoryActionsProps> = ({
     }
 
     if (!story) return;
+    
     try {
-      //console.log('generatedImages:', generatedImages);
-      toast.info('Preparing images for PDF...');
-      // Use array format for images
-      let imagesArray: (string | null)[] = [];
-      if (Array.isArray(generatedImages)) {
-        imagesArray = generatedImages;
+      toast.info('Preparing PDF...');
+      
+      // Create panels array if not provided (for AI-generated stories)
+      let panelsToUse = panels;
+      
+      if (!panelsToUse || panelsToUse.length === 0) {
+        console.log('🤖 No panels provided, creating from AI story data');
+        
+        // Parse story into panels array
+        const storyPanels = parseStoryToPanels(story);
+        console.log('🤖 Parsed story into panels:', storyPanels.length, 'panels');
+        
+        if (storyPanels.length === 0) {
+          throw new Error('Failed to parse story into panels for PDF generation');
+        }
+        
+        // Convert generatedImages to array format
+        let imagesArray: (string | null)[] = [];
+        if (Array.isArray(generatedImages)) {
+          imagesArray = generatedImages;
+        } else {
+          const imageKeys = Object.keys(generatedImages);
+          imagesArray = imageKeys.map(key => generatedImages[key]).filter(img => img && img !== 'undefined');
+        }
+        
+        console.log('🤖 Images array:', imagesArray.length, 'images');
+        
+        // Create panels array with consistent structure
+        panelsToUse = storyPanels.map((panelText, index) => ({
+          panel_text: panelText,
+          aws_s3_image_url: imagesArray[index] || null,
+          file_url: imagesArray[index] || null,
+          panel_number: index + 1
+        }));
+        
+        console.log('🤖 Created panels array:', panelsToUse.length, 'panels');
       } else {
-        const imageKeys = Object.keys(generatedImages);
-        imagesArray = imageKeys.map(key => generatedImages[key]).filter(img => img && img !== 'undefined');
+        console.log('📚 Using provided panels array:', panelsToUse.length, 'panels');
       }
-      // Download and convert each image to base64
-      const base64Images = await Promise.all(
-        imagesArray.map(async (url, idx) => {
-          if (!url) return null;
-          try {
-            //console.log(`Processing image ${idx + 1} for PDF:`, url.includes('storymaker-jcool.s3.amazonaws.com') ? 'Using presigned URL' : 'Using original URL');
-            const file = await urlToFile(url, `panel${idx + 1}.jpg`);
-            return await fileToBase64(file);
-          } catch (e) {
-            console.error(`Failed to process image ${idx + 1}:`, e);
-            return null;
-          }
-        })
+      
+      // Validate panels structure
+      const validPanels = panelsToUse.filter(panel => 
+        panel && 
+        panel.panel_text && 
+        (panel.aws_s3_image_url || panel.file_url)
       );
-      // Now call your PDF generator with base64Images
-      const pdf = await generateComicPDF(
-        story,
+      
+      if (validPanels.length === 0) {
+        throw new Error('No valid panels found for PDF generation');
+      }
+      
+      console.log('📚 Valid panels for PDF:', validPanels.length);
+      console.log('📚 Panel structure:', validPanels.map(p => ({
+        text: p.panel_text?.substring(0, 50) + '...',
+        image: p.aws_s3_image_url || p.file_url
+      })));
+      
+      // Generate PDF using the unified panels approach
+      const pdf = await generateCuratedStoryPDF(
+        validPanels,
         characterName,
         characterPhoto,
         genre,
-        base64Images as (string | null)[], // pass the base64 array
-        hfApiKey,
-        cleanPanelTextForDisplay,
         'grid', // viewMode
-        title // NEW: pass the title
+        title
       );
-      pdf.save(`${characterName}-comic-story.pdf`);
-      toast.success('Comic PDF downloaded successfully!');
+      
+      const filename = panels ? `${characterName}-curated-story.pdf` : `${characterName}-comic-story.pdf`;
+      pdf.save(filename);
+      
+      const successMessage = panels ? 'Curated story PDF downloaded successfully!' : 'Comic PDF downloaded successfully!';
+      toast.success(successMessage);
+      
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error('Failed to generate PDF. Please try again.');
+      console.error('PDF generation failed:', error);
+      toast.error(`PDF generation failed: ${error.message}`);
     }
   };
 

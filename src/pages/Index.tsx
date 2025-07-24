@@ -31,6 +31,7 @@ import { trackPhotosRegenerated, trackStoryRegenerated } from '@/utils/gtm';
 import { SAMPLE_PDFS } from '@/components/AppHeader';
 import { BASE_URL } from '@/config/api';
 
+
 // Carousel images for hero section
 const carouselImages = [
   "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/web_assets/3.png",
@@ -360,7 +361,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     
 
             console.log('👤 Extracted character name:', characterName);
-            
+            debugger;
             // Reconstruct story text from panels
             const reconstructedStory = panels.map((panel: any, index: number) => {
               // Clean up panel text by removing markdown formatting and page headers

@@ -16,7 +16,6 @@ export const generateComicPDF = async (
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const margin = 15;
-  
 
   // // Load background image as Data URL
   // const bgImageUrl = '/pdf-bg/flowers.jpeg';
@@ -46,18 +45,11 @@ export const generateComicPDF = async (
   let imagesArray: (string | null)[] = [];
   if (Array.isArray(generatedImages)) {
     imagesArray = generatedImages;
-    console.log('🔍 PDF Generator: Using new array format with', imagesArray.length, 'images');
-    console.log('🔍 PDF Generator: Images array:', imagesArray);
   } else {
     // Convert old object format to array
     const imageKeys = Object.keys(generatedImages);
     imagesArray = imageKeys.map(key => generatedImages[key]).filter(img => img && img !== 'undefined');
-    console.log('🔍 PDF Generator: Converted old object format to array with', imagesArray.length, 'images');
   }
-  
-  console.log('🔍 PDF Generator: Final images array:', imagesArray);
-  console.log('🔍 PDF Generator: Images with URLs:', imagesArray.filter(img => img).length);
-  console.log('🔍 PDF Generator: Images without URLs:', imagesArray.filter(img => !img).length);
   
   // Front Cover Page
   pdf.addImage(bgDataUrlFront, 'JPEG', 0, 0, pageWidth, pageHeight);
@@ -187,7 +179,7 @@ export const generateComicPDF = async (
         const imageY = y + 5;
         if (imageUrl && imageUrl !== 'undefined' && imageUrl !== null) {
           try {
-            const imageDataUrl = await imageToDataURL(imageUrl);
+            const imageDataUrl = imageUrl //await imageToDataURL(imageUrl);
             pdf.addImage(imageDataUrl, 'JPEG', imageX, imageY, imageWidth, imageHeight);
           } catch (error) {
             pdf.setFillColor(245, 245, 245);
@@ -283,7 +275,7 @@ export const generateComicPDF = async (
     const imageY = y + 5;
     if (imageUrl && imageUrl !== 'undefined' && imageUrl !== null) {
       try {
-        const imageDataUrl = await imageToDataURL(imageUrl);
+        const imageDataUrl = imageUrl //await imageToDataURL(imageUrl);
         pdf.addImage(imageDataUrl, 'JPEG', imageX, imageY, imageWidth, imageHeight);
       } catch (error) {
         pdf.setFillColor(245, 245, 245);
@@ -381,8 +373,6 @@ export const generateCuratedStoryPDF = async (
   const bgDataUrlFront = await imageToDataURL(bgImageFrontUrl);
   const bgDataUrlBack = await imageToDataURL(bgImageBackUrl);
 
-  console.log('🔍 Curated PDF Generator: Processing', panels.length, 'panels');
-
   // Front Cover Page
   pdf.addImage(bgDataUrlFront, 'JPEG', 0, 0, pageWidth, pageHeight);
   
@@ -426,10 +416,6 @@ export const generateCuratedStoryPDF = async (
   // Extract panel texts and image URLs
   const panelTexts = panels.map(panel => panel.panel_text || '');
   const imageUrls = panels.map(panel => panel.aws_s3_image_url || panel.file_url);
-  
-  console.log('🔍 Curated PDF: Panel texts count:', panelTexts.length);
-  console.log('🔍 Curated PDF: Image URLs count:', imageUrls.length);
-  console.log('🔍 Curated PDF: Panels with images:', imageUrls.filter(url => url).length);
 
   if (viewMode === 'split') {
     // Split view: 1 panel per page
@@ -439,8 +425,6 @@ export const generateCuratedStoryPDF = async (
       const panelText = panelTexts[panelIndex];
       const imageUrl = imageUrls[panelIndex];
       const cleanText = panelText.replace(/\*\*Panel \d+:\*\*/, '').trim();
-      
-      console.log(`🔍 Curated PDF: Processing panel ${panelIndex + 1} in split view`);
       
       const panelWidth = pageWidth - 2 * margin;
       const panelHeight = 200;
@@ -521,8 +505,6 @@ export const generateCuratedStoryPDF = async (
     const panelHeight = 110;
     const panelsPerPage = 4;
     const totalPages = Math.ceil(panelTexts.length / panelsPerPage);
-    
-    console.log('🔍 Curated PDF: Grid view - Total panels:', panelTexts.length, 'Total pages:', totalPages);
     
     for (let pageNum = 0; pageNum < totalPages; pageNum++) {
       if (pageNum > 0) { pdf.addPage(); }

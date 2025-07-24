@@ -961,12 +961,11 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
             characterPhoto={displayCharacterPhoto}
             genre={curatedStoryResult?.genre || 'adventure'}
             generatedImages={images}
-            hfApiKey="" // Not needed for curated stories
-            cleanPanelTextForDisplay={cleanPanelTextForDisplay}
             lockedPanels={lockedPanels}
             onUnlockRequest={handleUnlockRequest}
             title={curatedStoryResult?.title || `${characterName}'s Curated Story`}
             isPaid={localIsPaid}
+            panels={panels}
           />
 
           <div className="text-center bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4">

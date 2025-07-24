@@ -9,6 +9,7 @@ import { downloadAllImages } from '@/utils/downloadHelpers';
 import { fileToBase64 } from '@/utils/imageUtils';
 import { useNavigate } from "react-router-dom";
 import { trackCheckoutStarted, trackDownloadPDFButtonClicked } from '@/utils/gtm';
+import { parseStoryToPanels } from '@/utils/storyParser';
 
 interface ComicBookProps {
   story: string;
@@ -222,7 +223,7 @@ const ComicBook: React.FC<ComicBookProps> = ({
       trackCheckoutStarted('unlock_now_generate_pdf_button', 49);
       return;
     }
-
+    debugger;
     // If this is a curated story, use the curated download handler
     if (isCuratedStory && onCuratedDownloadPDF) {
       console.log('🔍 Using curated story PDF download handler');
@@ -267,8 +268,10 @@ const ComicBook: React.FC<ComicBookProps> = ({
         console.log('⚠️ No valid images found, attempting PDF generation with story only');
         // Try to generate PDF with just the story content
         try {
+          debugger;
+          const storyPanels = parseStoryToPanels(story);
           const pdf = await generateComicPDF(
-            story,
+            storyPanels,
             characterName,
             characterPhoto,
             genre,
@@ -314,10 +317,10 @@ const ComicBook: React.FC<ComicBookProps> = ({
         pdfViewMode,
         title
       });
-
+      const storyPanels = parseStoryToPanels(story);
       // Generate PDF with specified view mode using the raw story (same as StoryActions)
       const pdf = await generateComicPDF(
-        story, // Use raw story like StoryActions does
+        storyPanels, // Use raw story like StoryActions does
         characterName,
         characterPhoto,
         genre,
