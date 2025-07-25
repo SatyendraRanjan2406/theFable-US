@@ -69,9 +69,9 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const [isGeneratingPremiumContent, setIsGeneratingPremiumContent] = useState(false);
   const [isCreatingMagic, setIsCreatingMagic] = useState(false);
-      const [isGeneratingImages, setIsGeneratingImages] = useState(false);
+  const [isGeneratingImages, setIsGeneratingImages] = useState(false);
   const [localIsPaid, setLocalIsPaid] = useState(isPaid);
-  
+
   // Determine if we're in edit mode or create mode
   const isEditMode = curatedStoryResult && (
     curatedStoryResult.character_name || 
@@ -901,7 +901,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
             </p>
           </div>
 
-                    {/* Character Photo Display */}
+          {/* Character Photo Display */}
           {displayCharacterPhoto && (
             <div className="text-center bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200 rounded-xl p-6">
               <div className="relative inline-block">

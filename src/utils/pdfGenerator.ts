@@ -10,7 +10,7 @@ export const generateComicPDF = async (
   generatedImages: {[key: string]: string} | (string | null)[],
   hfApiKey: string,
   cleanPanelTextForDisplay: (text: string) => string,
-  viewMode: 'grid' | 'split' = 'grid',
+  viewMode: 'grid' | 'split' | 'fullscreen' = 'grid',
   title?: string // NEW: story title
 ): Promise<jsPDF> => {
   const pdf = new jsPDF();
@@ -22,19 +22,30 @@ export const generateComicPDF = async (
   // const bgImageUrl = '/pdf-bg/flowers.jpeg';
   let bgImageFrontUrl = '/pdf-bg/adv_front.jpeg';
   let bgImageBackUrl = '/pdf-bg/adv_back.jpeg';
-  console.log('genre ----- -- ------- --- - -', genre);
-  if (genre === 'fairytale') {
-    bgImageFrontUrl = '/pdf-bg/fairy_front.jpeg';
-    bgImageBackUrl = '/pdf-bg/fairy_back.jpeg';
-  } else if (genre === 'adventure') {
+  console.log('🔍 PDF Generator: Genre received:', genre);
+  
+  // Normalize genre to handle different spellings and cases
+  const normalizedGenre = genre?.toLowerCase().trim();
+  console.log('🔍 PDF Generator: Normalized genre:', normalizedGenre);
+  
+  if (normalizedGenre === 'fairytale') {
+    bgImageFrontUrl = '/pdf-bg/fairy_front.jpg';
+    bgImageBackUrl = '/pdf-bg/fairy_back.jpg';
+    console.log('🔍 PDF Generator: Using fairy tale background');
+  } else if (normalizedGenre === 'adventure') {
     bgImageFrontUrl = '/pdf-bg/adv_front.jpeg';
     bgImageBackUrl = '/pdf-bg/adv_back.jpeg';
-  } else if (genre === 'mystery') {
+    console.log('🔍 PDF Generator: Using adventure background');
+  } else if (normalizedGenre === 'mystery') {
     bgImageFrontUrl = '/pdf-bg/mystery_front.jpeg';
     bgImageBackUrl = '/pdf-bg/mystery_back.jpeg';
-  } else if (genre === 'humor') {
-    bgImageFrontUrl = '/pdf-bg/comic_front.jpeg';
-    bgImageBackUrl = '/pdf-bg/comic_back.jpeg';
+    console.log('🔍 PDF Generator: Using mystery background');
+  } else if (normalizedGenre === 'humour' || normalizedGenre === 'humor') {
+    bgImageFrontUrl = '/pdf-bg/comic_front.jpg';
+    bgImageBackUrl = '/pdf-bg/comic_back.jpg';
+    console.log('🔍 PDF Generator: Using humour/comic background');
+  } else {
+    console.log('🔍 PDF Generator: Unknown genre, using default adventure background');
   }
       
     const bgDataUrlFront = await imageToDataURL(bgImageFrontUrl);
@@ -232,6 +243,77 @@ export const generateComicPDF = async (
       pdf.setFontSize(10);
       pdf.text(`${pageNum + 1}`, pageCircleX, pageCircleY + 3, { align: 'center' });
     }
+  } else if (viewMode === 'fullscreen') {
+    // Fullscreen view: 1 panel per page with image as full background
+    console.log('🔍 PDF Generator: Fullscreen view - Total panels:', panelsToShow.length);
+    
+    for (let panelIndex = 0; panelIndex < panelsToShow.length; panelIndex++) {
+      if (panelIndex > 0) { pdf.addPage(); }
+      
+      const panelText = panelsToShow[panelIndex];
+      const cleanText = cleanPanelTextForDisplay(panelText);
+      const imageUrl = imagesArray[panelIndex];
+      
+      // Add panel image as full background
+      if (imageUrl && imageUrl !== 'undefined' && imageUrl !== null) {
+        try {
+          const imageDataUrl = imageUrl; // await imageToDataURL(imageUrl);
+          pdf.addImage(imageDataUrl, 'JPEG', 0, 0, pageWidth, pageHeight);
+        } catch (error) {
+          console.log('🔍 PDF Generator: Failed to add background image for panel', panelIndex, error);
+          // Fallback to white background
+          pdf.setFillColor(255, 255, 255);
+          pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+        }
+      } else {
+        // Fallback to white background if no image
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+      }
+      
+      // Add glassy gradient overlay from bottom to 3/4th of page
+      const gradientStartY = pageHeight * 0.75; // Start at 3/4th of page
+      const gradientHeight = pageHeight - gradientStartY;
+      
+      // No gradient overlay - using text shadow for readability instead
+      
+      // Add panel text at bottom with white color
+      const textMargin = 20;
+      const textWidth = pageWidth - (textMargin * 2);
+      const textY = gradientStartY + 20; // Position text in the gradient area
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(12); // Smaller font size
+      pdf.setTextColor(255, 255, 255);
+      
+      const textLines = pdf.splitTextToSize(cleanText, textWidth);
+      const lineHeight = 8;
+      const maxLines = Math.floor((gradientHeight - 40) / lineHeight);
+      const displayLines = textLines.slice(0, maxLines);
+      
+      for (let lineIndex = 0; lineIndex < displayLines.length; lineIndex++) {
+        const lineY = textY + (lineIndex * lineHeight);
+        pdf.text(displayLines[lineIndex], textMargin, lineY);
+      }
+      
+      if (textLines.length > maxLines) {
+        const lastLineY = textY + ((maxLines - 1) * lineHeight);
+        pdf.text('...', textMargin + textWidth - 20, lastLineY);
+      }
+      
+      // Add page number
+      const pageCircleX = pageWidth - 25;
+      const pageCircleY = pageHeight - 25;
+      pdf.setFillColor(255, 255, 255);
+      pdf.setDrawColor(0, 0, 0);
+      pdf.setLineWidth(1);
+      pdf.circle(pageCircleX, pageCircleY, 12, 'F');
+      pdf.circle(pageCircleX, pageCircleY, 12);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`${panelIndex + 1}`, pageCircleX, pageCircleY + 3, { align: 'center' });
+    }
   } else {
     // Grid view: 2x2 grid (4 panels per page)
   const panelWidth = (pageWidth - margin * 3) / 2;
@@ -345,7 +427,7 @@ export const generateCuratedStoryPDF = async (
   characterName: string,
   characterPhoto: string | null,
   genre: string,
-  viewMode: 'grid' | 'split' = 'grid',
+  viewMode: 'grid' | 'split' | 'fullscreen' = 'grid',
   title?: string
 ): Promise<jsPDF> => {
   const pdf = new jsPDF();
@@ -357,18 +439,28 @@ export const generateCuratedStoryPDF = async (
   let bgImageFrontUrl = '/pdf-bg/adv_front.jpeg';
   let bgImageBackUrl = '/pdf-bg/adv_back.jpeg';
   
-  if (genre === 'fairytale') {
-    bgImageFrontUrl = '/pdf-bg/fairy_front.jpeg';
-    bgImageBackUrl = '/pdf-bg/fairy_back.jpeg';
-  } else if (genre === 'adventure') {
+  // Normalize genre to handle different spellings and cases
+  const normalizedGenre = genre?.toLowerCase().trim();
+  console.log('🔍 Curated PDF Generator: Genre received:', genre, 'Normalized:', normalizedGenre);
+  
+  if (normalizedGenre === 'fairytale') {
+    bgImageFrontUrl = '/pdf-bg/fairy_front.jpg';
+    bgImageBackUrl = '/pdf-bg/fairy_back.jpg';
+    console.log('🔍 Curated PDF Generator: Using fairy tale background');
+  } else if (normalizedGenre === 'adventure') {
     bgImageFrontUrl = '/pdf-bg/adv_front.jpeg';
     bgImageBackUrl = '/pdf-bg/adv_back.jpeg';
-  } else if (genre === 'mystery') {
+    console.log('🔍 Curated PDF Generator: Using adventure background');
+  } else if (normalizedGenre === 'mystery') {
     bgImageFrontUrl = '/pdf-bg/mystery_front.jpeg';
     bgImageBackUrl = '/pdf-bg/mystery_back.jpeg';
-  } else if (genre === 'humor') {
-    bgImageFrontUrl = '/pdf-bg/comic_front.jpeg';
-    bgImageBackUrl = '/pdf-bg/comic_back.jpeg';
+    console.log('🔍 Curated PDF Generator: Using mystery background');
+  } else if (normalizedGenre === 'humour' || normalizedGenre === 'humor') {
+    bgImageFrontUrl = '/pdf-bg/comic_front.jpg';
+    bgImageBackUrl = '/pdf-bg/comic_back.jpg';
+    console.log('🔍 Curated PDF Generator: Using humour/comic background');
+  } else {
+    console.log('🔍 Curated PDF Generator: Unknown genre, using default adventure background');
   }
       
   const bgDataUrlFront = await imageToDataURL(bgImageFrontUrl);
@@ -498,6 +590,87 @@ export const generateCuratedStoryPDF = async (
       pdf.circle(pageCircleX, pageCircleY, 8, 'F');
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(10);
+      pdf.text(`${panelIndex + 1}`, pageCircleX, pageCircleY + 3, { align: 'center' });
+    }
+  } else if (viewMode === 'fullscreen') {
+    // Fullscreen view: 1 panel per page with image as full background
+    console.log('🔍 Curated PDF Generator: Fullscreen view - Total panels:', panelTexts.length);
+    
+    for (let panelIndex = 0; panelIndex < panelTexts.length; panelIndex++) {
+      if (panelIndex > 0) { pdf.addPage(); }
+      
+      const panelText = panelTexts[panelIndex];
+      const imageUrl = imageUrls[panelIndex];
+      const cleanText = panelText.replace(/\*\*Panel \d+:\*\*/, '').trim();
+      
+      // Add panel image as full background
+      if (imageUrl && imageUrl !== 'undefined' && imageUrl !== null) {
+        try {
+          const imageDataUrl = await imageToDataURL(imageUrl);
+          pdf.addImage(imageDataUrl, 'JPEG', 0, 0, pageWidth, pageHeight);
+        } catch (error) {
+          console.log('🔍 Curated PDF Generator: Failed to add background image for panel', panelIndex, error);
+          // Fallback to white background
+          pdf.setFillColor(255, 255, 255);
+          pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+        }
+      } else {
+        // Fallback to white background if no image
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+      }
+      
+      // Add glassy gradient overlay from bottom to 3/4th of page
+      const gradientStartY = pageHeight * 0.75; // Start at 3/4th of page
+      const gradientHeight = pageHeight - gradientStartY;
+      
+      // No gradient overlay - using text shadow for readability instead
+      
+      // Add panel text at bottom with white color and subtle shadow
+      const textMargin = 20;
+      const textWidth = pageWidth - (textMargin * 2);
+      const textY = gradientStartY + 20; // Position text in the bottom area
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(12); // Smaller font size
+      
+      // Add subtle text shadow for readability
+      pdf.setTextColor(0, 0, 0); // Black shadow
+      const shadowOffset = 1;
+      const textLines = pdf.splitTextToSize(cleanText, textWidth);
+      const lineHeight = 8;
+      const maxLines = Math.floor((gradientHeight - 40) / lineHeight);
+      const displayLines = textLines.slice(0, maxLines);
+      
+      // Draw shadow first
+      for (let lineIndex = 0; lineIndex < displayLines.length; lineIndex++) {
+        const lineY = textY + (lineIndex * lineHeight);
+        pdf.text(displayLines[lineIndex], textMargin + shadowOffset, lineY + shadowOffset);
+      }
+      
+      // Draw main text
+      pdf.setTextColor(255, 255, 255); // White text
+      for (let lineIndex = 0; lineIndex < displayLines.length; lineIndex++) {
+        const lineY = textY + (lineIndex * lineHeight);
+        pdf.text(displayLines[lineIndex], textMargin, lineY);
+      }
+      
+      if (textLines.length > maxLines) {
+        const lastLineY = textY + ((maxLines - 1) * lineHeight);
+        pdf.text('...', textMargin + textWidth - 20, lastLineY);
+      }
+      
+      // Add page number
+      const pageCircleX = pageWidth - 25;
+      const pageCircleY = pageHeight - 25;
+      pdf.setFillColor(255, 255, 255);
+      pdf.setDrawColor(0, 0, 0);
+      pdf.setLineWidth(1);
+      pdf.circle(pageCircleX, pageCircleY, 12, 'F');
+      pdf.circle(pageCircleX, pageCircleY, 12);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
       pdf.text(`${panelIndex + 1}`, pageCircleX, pageCircleY + 3, { align: 'center' });
     }
   } else {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Share, FileText, RefreshCw } from 'lucide-react';
+import { Download, Share, FileText, RefreshCw, Grid, Split, Monitor } from 'lucide-react';
 import { toast } from 'sonner';
 import { generateCuratedStoryPDF } from '@/utils/pdfGenerator';
 import { downloadTextFile, shareOrCopyContent, downloadAllImages } from '@/utils/downloadHelpers';
@@ -62,7 +62,7 @@ const StoryActions: React.FC<StoryActionsProps> = ({
     toast.success('Comic story downloaded successfully!');
   };
 
-  const handleDownloadPDF = async () => {
+  const handleDownloadPDF = async (selectedViewMode: 'grid' | 'split' | 'fullscreen' = 'grid') => {
     // Check payment status first
     if (!isPaymentComplete()) {
       onUnlockRequest?.();
@@ -135,14 +135,14 @@ const StoryActions: React.FC<StoryActionsProps> = ({
         characterName,
         characterPhoto,
         genre,
-        'grid', // viewMode
+        selectedViewMode, // Use the passed view mode
         title
       );
       
-      const filename = panels ? `${characterName}-curated-story.pdf` : `${characterName}-comic-story.pdf`;
+      const filename = panels ? `${characterName}-curated-story-${selectedViewMode}.pdf` : `${characterName}-comic-story-${selectedViewMode}.pdf`;
       pdf.save(filename);
       
-      const successMessage = panels ? 'Curated story PDF downloaded successfully!' : 'Comic PDF downloaded successfully!';
+      const successMessage = panels ? `Curated story PDF (${selectedViewMode}) downloaded successfully!` : `Comic PDF (${selectedViewMode}) downloaded successfully!`;
       toast.success(successMessage);
       
     } catch (error) {
@@ -191,26 +191,8 @@ const StoryActions: React.FC<StoryActionsProps> = ({
 
   return (
     <div className="space-y-3">
-      {/* Regenerate button */}
-      {/* {onRegenerateStory && (
-        <Button
-          onClick={onRegenerateStory}
-          disabled={isRegenerating}
-          className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
-        >
-          {isRegenerating ? (
-            <>
-              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-              Regenerating Story...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Regenerate Story
-            </>
-          )}
-        </Button>
-      )} */}
+
+      
       {/* Download and share buttons */}
       <div className="flex flex-col md:flex-row gap-3">
         <Button
@@ -221,14 +203,30 @@ const StoryActions: React.FC<StoryActionsProps> = ({
           <Download className="w-4 h-4 mr-2" />
           Download TXT
         </Button>
-        {/* <Button
-          onClick={handleDownloadPDF}
+        <Button
+          onClick={() => handleDownloadPDF('grid')}
           variant="outline"
           className="flex-1 border-2 border-blue-300 text-blue-700 hover:bg-blue-50"
         >
-          <FileText className="w-4 h-4 mr-2" />
-          Download Comic PDF
-        </Button> */}
+          <Grid className="w-4 h-4 mr-2" />
+          Grid PDF
+        </Button>
+        <Button
+          onClick={() => handleDownloadPDF('split')}
+          variant="outline"
+          className="flex-1 border-2 border-green-300 text-green-700 hover:bg-green-50"
+        >
+          <Split className="w-4 h-4 mr-2" />
+          Split PDF
+        </Button>
+        <Button
+          onClick={() => handleDownloadPDF('fullscreen')}
+          variant="outline"
+          className="flex-1 border-2 border-orange-300 text-orange-700 hover:bg-orange-50"
+        >
+          <Monitor className="w-4 h-4 mr-2" />
+          Fullscreen PDF
+        </Button>
         {/* <Button
           onClick={handleDownloadImages}
           variant="outline"
