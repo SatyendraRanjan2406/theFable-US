@@ -204,37 +204,13 @@ const StoryActions: React.FC<StoryActionsProps> = ({
           Download TXT
         </Button>
         <Button
-          onClick={() => handleDownloadPDF('grid')}
-          variant="outline"
-          className="flex-1 border-2 border-blue-300 text-blue-700 hover:bg-blue-50"
-        >
-          <Grid className="w-4 h-4 mr-2" />
-          Grid PDF
-        </Button>
-        <Button
-          onClick={() => handleDownloadPDF('split')}
-          variant="outline"
-          className="flex-1 border-2 border-green-300 text-green-700 hover:bg-green-50"
-        >
-          <Split className="w-4 h-4 mr-2" />
-          Split PDF
-        </Button>
-        <Button
-          onClick={() => handleDownloadPDF('fullscreen')}
-          variant="outline"
-          className="flex-1 border-2 border-orange-300 text-orange-700 hover:bg-orange-50"
-        >
-          <Monitor className="w-4 h-4 mr-2" />
-          Fullscreen PDF
-        </Button>
-        {/* <Button
           onClick={handleDownloadImages}
           variant="outline"
           className="flex-1 border-2 border-green-300 text-green-700 hover:bg-green-50"
         >
           <Download className="w-4 h-4 mr-2" />
           Download Images
-        </Button> */}
+        </Button>
         <Button
           onClick={handleShare}
           variant="outline"

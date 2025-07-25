@@ -363,7 +363,6 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     
 
             console.log('👤 Extracted character name:', characterName);
-            debugger;
             // Reconstruct story text from panels
             const reconstructedStory = panels.map((panel: any, index: number) => {
               // Clean up panel text by removing markdown formatting and page headers
@@ -387,7 +386,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
             
             console.log('📝 Reconstructed story:', reconstructedStory.substring(0, 200) + '...');
             console.log('👤 Form data:', formData);
-            debugger;
+            
             // Set form data with story information
             setFormData((prev: any) => ({
               ...prev,
@@ -1668,7 +1667,6 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
               // Update progress
               setCuratedGenerationProgress(3);
               setCuratedCurrentStep('Finalizing your story...');
-              debugger
               // Store the result
               setCuratedStoryResult(result);
               

@@ -32,7 +32,7 @@ interface ComicPanelProps {
   characterPhotoFile?: File | null;
   onUnlockClick?: () => void;
   onRetry?: () => void;
-  viewMode?: 'grid' | 'split';
+  viewMode?: 'grid' | 'split' | 'fullscreen';
   errorImages?: {[key: string]: boolean} | {[key: number]: boolean};
   retryLoadingPanels?: {[key: string]: boolean};
   onRegenerate?: (index: number, panelId?: string) => void;
@@ -191,13 +191,13 @@ const ComicPanel: React.FC<ComicPanelProps> = ({
   return (
     <div 
       className={`border-2 border-gray-400 rounded-lg p-3 bg-gray-50 ${
-        viewMode === 'split' ? 'min-h-[400px]' : 'min-h-[200px]'
+        viewMode === 'fullscreen' ? 'min-h-[600px]' : viewMode === 'split' ? 'min-h-[400px]' : 'min-h-[200px]'
       } ${onClick ? 'cursor-pointer hover:bg-gray-100 transition-colors' : ''}`}
       onClick={onClick}
     >
       {/* Scene Image */}
       <div className={`relative rounded-lg mb-3 overflow-hidden border-2 border-dashed border-gray-300 bg-white ${
-        viewMode === 'split' ? 'h-80' : 'h-64'
+        viewMode === 'fullscreen' ? 'h-96' : viewMode === 'split' ? 'h-80' : 'h-64'
       }`}>
         {shouldShowLocked ? (
           <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center text-center p-4">
@@ -329,7 +329,7 @@ const ComicPanel: React.FC<ComicPanelProps> = ({
       
       {/* Panel text */}
       <div className={`text-sm bg-white rounded border p-3 ${
-        viewMode === 'split' ? 'text-base' : ''
+        viewMode === 'fullscreen' ? 'text-lg' : viewMode === 'split' ? 'text-base' : ''
       }`}>
         <p className="text-gray-700 leading-relaxed">{displayText}</p>
         

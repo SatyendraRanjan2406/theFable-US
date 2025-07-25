@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import ComicPanel from './ComicPanel';
 import PricingModal from './PricingModal';
-import { Grid, Split, Download, FileText, Image } from 'lucide-react';
+import { Grid, Split, Download, FileText, Image, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { generateComicPDF } from '@/utils/pdfGenerator';
@@ -47,7 +47,7 @@ interface ComicBookProps {
   }>; // NEW: panels data from API for edit mode
   isPaid?: boolean; // NEW: payment status for edit mode
   isCuratedStory?: boolean; // NEW: flag for curated story mode
-  onCuratedDownloadPDF?: (viewMode: 'grid' | 'split') => Promise<void>; // NEW: curated story PDF download handler
+  onCuratedDownloadPDF?: (viewMode: 'grid' | 'split' | 'fullscreen') => Promise<void>; // NEW: curated story PDF download handler
 }
 
 const ComicBook: React.FC<ComicBookProps> = ({
@@ -172,7 +172,7 @@ const ComicBook: React.FC<ComicBookProps> = ({
   const panelsToShow = allPanels;
   console.log('panelsToShow:', panelsToShow);
   const [isGeneratingLockedImages, setIsGeneratingLockedImages] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'split'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'split' | 'fullscreen'>('grid');
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
   const [isDownloadingImages, setIsDownloadingImages] = useState(false);
 
@@ -216,27 +216,19 @@ const ComicBook: React.FC<ComicBookProps> = ({
     return isPaid;
   };
 
-  const handleDownloadPDF = async (downloadViewMode?: 'grid' | 'split') => {
+  const handleDownloadPDF = async (downloadViewMode?: 'grid' | 'split' | 'fullscreen') => {
     // Check payment status first
     if (!isPaymentComplete()) {
       onUnlockRequest?.();
       trackCheckoutStarted('unlock_now_generate_pdf_button', 49);
       return;
     }
-    debugger;
     // If this is a curated story, use the curated download handler
     if (isCuratedStory && onCuratedDownloadPDF) {
       console.log('🔍 Using curated story PDF download handler');
       await onCuratedDownloadPDF(downloadViewMode || 'grid');
       return;
     }
-
-    console.log('🔍 ComicBook handleDownloadPDF 123called, isPaid =', isPaid)
-    console.log('🔍 ComicBook handleDownloadPDF 123called, story =', story)
-    console.log('🔍 ComicBook handleDownloadPDF 123called, images =', images)
-    // if (!story || !images) return;
-
-
     // Use the specified view mode for download, or current view mode if not specified
     const pdfViewMode = downloadViewMode || viewMode;
     
@@ -268,7 +260,6 @@ const ComicBook: React.FC<ComicBookProps> = ({
         console.log('⚠️ No valid images found, attempting PDF generation with story only');
         // Try to generate PDF with just the story content
         try {
-          debugger;
           const storyPanels = parseStoryToPanels(story);
           const pdf = await generateComicPDF(
             storyPanels,
@@ -415,6 +406,17 @@ const ComicBook: React.FC<ComicBookProps> = ({
               <Split className="w-4 h-4" />
               Split
             </button>
+            <button
+              onClick={() => setViewMode('fullscreen')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                viewMode === 'fullscreen'
+                  ? 'bg-white text-purple-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              <Monitor className="w-4 h-4" />
+              Fullscreen
+            </button>
           </div>
         </div>
 
@@ -457,6 +459,24 @@ const ComicBook: React.FC<ComicBookProps> = ({
             )}
           </Button>
           <Button
+            onClick={() => handleDownloadPDF('fullscreen')}
+            disabled={isDownloadingPDF || !images || images.filter(img => img).length === 0}
+            variant="outline"
+            className="flex-1 border-2 border-orange-300 text-orange-700 hover:bg-orange-50"
+          >
+            {isDownloadingPDF && viewMode === 'fullscreen' ? (
+              <>
+                <Download className="w-4 h-4 mr-2 animate-spin" />
+                Generating PDF...
+              </>
+            ) : (
+              <>
+                <Monitor className="w-4 h-4 mr-2" />
+                Fullscreen PDF
+              </>
+            )}
+          </Button>
+          {/* <Button
             onClick={handleDownloadImages}
             disabled={isDownloadingImages || !images || images.filter(img => img).length === 0}
             variant="outline"
@@ -473,12 +493,14 @@ const ComicBook: React.FC<ComicBookProps> = ({
                 Download Images
               </>
             )}
-          </Button>
+          </Button> */}
         </div>
         
         <div className={`${
           viewMode === 'grid' 
             ? 'grid grid-cols-1 md:grid-cols-2 gap-6' 
+            : viewMode === 'fullscreen'
+            ? 'space-y-4'
             : 'space-y-8'
         }`}>
           {panelsToShow.map((panelText, idx) => {
