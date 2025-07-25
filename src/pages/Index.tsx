@@ -170,6 +170,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
       }
     };
 
+    
     loadCuratedStories();
   }, []);
 
