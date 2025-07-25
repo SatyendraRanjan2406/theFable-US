@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
+import { APP_CONFIG } from "./config/app";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import OAuthCallbackPage from "./pages/OAuthCallbackPage";
@@ -62,7 +63,7 @@ export const App = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
-              <Link to="/" className="text-xl md:text-2xl font-bold text-[#8D4BE5]">StoryMaker</Link>
+              <Link to="/" className="text-xl md:text-2xl font-bold text-[#8D4BE5]">{APP_CONFIG.title}</Link>
             </div>
             <div className="flex items-center gap-2 md:gap-4 lg:gap-6">
               <Link to="/privacy" className="flex items-center gap-1 md:gap-2 text-[#8D4BE5] hover:text-[#6B21A8] transition-colors text-xs md:text-sm lg:text-base font-medium">

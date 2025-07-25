@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import { imageToDataURL } from './imageConverter';
+import { APP_CONFIG } from '@/config/app';
 
 export const generateComicPDF = async (
   storyData: string | string[], // Accept either raw story or pre-parsed panels
@@ -91,14 +92,14 @@ export const generateComicPDF = async (
     }
   }
   
-  // Add "Powered by StoryCreator.jcool.in" at bottom
+  // Add "Powered by The Fable" at bottom
   pdf.setFontSize(12);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(255, 255, 255);
-  pdf.text('Powered by StoryCreator.jcool.in', pageWidth / 2, pageHeight - 20, { align: 'center' });
+  pdf.text('Powered by ' + APP_CONFIG.title , pageWidth / 2, pageHeight - 20, { align: 'center' });
   
   // Add hyperlink to the text (opens in new tab)
-  pdf.link(pageWidth / 2 - 50, pageHeight - 25, 100, 10, { url: 'https://StoryCreator.jcool.in', target: '_blank' });
+  pdf.link(pageWidth / 2 - 50, pageHeight - 25, 100, 10, { url: 'https://'+APP_CONFIG.domain, target: '_blank' });
   
   // Now start the comic panels on a new page (no background)
   pdf.addPage();

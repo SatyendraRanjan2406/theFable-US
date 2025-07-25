@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { APP_CONFIG } from '@/config/app';
 
 export default function PaymentRefundPolicy() {
   return (
@@ -52,7 +53,7 @@ export default function PaymentRefundPolicy() {
             <h2 className="text-2xl font-dm-serif mb-4 text-[#8D4BE5]">🔁 Refund Policy</h2>
             
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <p className="text-gray-700">All stories and digital experiences offered on Storymaker.jcool.in are delivered instantly online. Once a product is accessed, it is considered delivered and non-refundable.</p>
+              <p className="text-gray-700">All stories and digital experiences offered on {APP_CONFIG.title} are delivered instantly online. Once a product is accessed, it is considered delivered and non-refundable.</p>
             </div>
 
             <div className="space-y-4">

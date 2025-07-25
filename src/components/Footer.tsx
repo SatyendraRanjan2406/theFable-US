@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useContact } from '@/context/ContactContext';
+import { getCopyrightText } from '@/config/app';
 
 const Footer: React.FC = () => {
   const { openContactModal } = useContact();
@@ -57,7 +58,7 @@ const Footer: React.FC = () => {
       </div>
       {/* Copyright Bar */}
       <div className="text-center text-xs text-gray-500 mt-2 pb-2">
-        Storymaker.jcool.in © 2025 Parable Studios Private Limited. All rights reserved.
+        {getCopyrightText()}
       </div>
     </footer>
   );

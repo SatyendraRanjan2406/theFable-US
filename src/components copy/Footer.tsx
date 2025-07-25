@@ -57,7 +57,7 @@ const Footer: React.FC = () => {
       </div>
       {/* Copyright Bar */}
       <div className="text-center text-xs text-gray-500 mt-2 pb-2">
-        Storymaker.jcool.in © 2025 Parable Studios Private Limited. All rights reserved.
+        StoryMaker.jcool.in © 2025 Parable Studios Private Limited. All rights reserved.
       </div>
     </footer>
   );

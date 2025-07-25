@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { User, LogOut, Menu } from 'lucide-react';
+import { APP_CONFIG } from '@/config/app';
 
 interface NavigationBarProps {
   isAuthenticated: boolean;
@@ -21,7 +22,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ isAuthenticated, onLoginC
             </Button>
           )}
           <Link to="/" className="text-2xl font-bold text-gray-800">
-            StoryMaker
+            {APP_CONFIG.title}
           </Link>
         </div>
         <div>

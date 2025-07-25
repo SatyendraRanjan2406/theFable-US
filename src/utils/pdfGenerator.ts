@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import { imageToDataURL } from './imageConverter';
+import { getPoweredByText } from '@/config/app';
 
 export const generateComicPDF = async (
   storyData: string | string[], // Accept either raw story or pre-parsed panels
@@ -86,14 +87,14 @@ export const generateComicPDF = async (
     }
   }
   
-  // Add "Powered by storymaker.jcool.in" at bottom
+  // Add "Powered by" text at bottom
   pdf.setFontSize(12);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(255, 255, 255);
-  pdf.text('Powered by storymaker.jcool.in', pageWidth / 2, pageHeight - 20, { align: 'center' });
+  pdf.text(getPoweredByText(), pageWidth / 2, pageHeight - 20, { align: 'center' });
   
   // Add hyperlink to the text (opens in new tab)
-  pdf.link(pageWidth / 2 - 50, pageHeight - 25, 100, 10, { url: 'https://storymaker.jcool.in', target: '_blank' });
+  pdf.link(pageWidth / 2 - 50, pageHeight - 25, 100, 10, { url: `https://${import.meta.env.VITE_APP_DOMAIN || 'storymaker.jcool.in'}`, target: '_blank' });
   
   // Now start the comic panels on a new page (no background)
   pdf.addPage();
@@ -407,8 +408,8 @@ export const generateCuratedStoryPDF = async (
   pdf.setFontSize(12);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(255, 255, 255);
-  pdf.text('Powered by storymaker.jcool.in', pageWidth / 2, pageHeight - 20, { align: 'center' });
-  pdf.link(pageWidth / 2 - 50, pageHeight - 25, 100, 10, { url: 'https://storymaker.jcool.in', target: '_blank' });
+  pdf.text(getPoweredByText(), pageWidth / 2, pageHeight - 20, { align: 'center' });
+  pdf.link(pageWidth / 2 - 50, pageHeight - 25, 100, 10, { url: `https://${import.meta.env.VITE_APP_DOMAIN || 'storymaker.jcool.in'}`, target: '_blank' });
   
   // Start comic panels on new page
   pdf.addPage();

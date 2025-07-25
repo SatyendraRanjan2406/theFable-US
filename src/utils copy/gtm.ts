@@ -25,7 +25,7 @@ export const gtmPush = (eventData: Record<string, any>) => {
   }
 };
 
-// StoryCreator specific event tracking functions
+//  specific event tracking functions
 export const trackStoryCreationHomeButtonClicked = (source?: string) => {
   gtmPush({
     event: 'story_creation_home_button_clicked',

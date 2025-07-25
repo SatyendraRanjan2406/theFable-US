@@ -5,6 +5,7 @@ import StoryExamplesShowcase from './StoryExamplesShowcase';
 import MagicalImageCollage from './MagicalImageCollage';
 import ImageCarousel from './ImageCarousel';
 import { Button } from '@/components/ui/button';
+import { APP_CONFIG } from '@/config/app';
 import { trackStoryCreationHomeButtonClicked, trackStoryCreationStarted, trackStoryTemplateSelected } from '@/utils/gtm';
 
 type WorkflowStep = 'form' | 'outline' | 'final';
@@ -65,7 +66,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ currentStep, onCreateStoryClick, 
               <Button variant="ghost" size="sm" onClick={onMenuToggle} className="p-2">
                 <Menu className="w-5 h-5" />
               </Button>
-              <span className="text-xl font-bold text-gray-800">StoryMaker</span>
+              <span className="text-xl font-bold text-gray-800">{APP_CONFIG.title}</span>
             </div>
           </nav>
         </header>
@@ -107,9 +108,9 @@ const AppHeader: React.FC<AppHeaderProps> = ({ currentStep, onCreateStoryClick, 
         </div>
       </section>
 
-      {/* Why Parents Love StoryMaker */}
+      {/* Why Parents Love {APP_CONFIG.title} */}
       <section className="max-w-6xl mx-auto py-12 px-4">
-        <h2 className="text-2xl md:text-3xl font-semibold mb-8 text-center text-[#333333]">Why Parents Love StoryMaker</h2>
+        <h2 className="text-2xl md:text-3xl font-semibold mb-8 text-center text-[#333333]">Why Parents Love {APP_CONFIG.title}</h2>
         <div className="grid gap-6 md:grid-cols-3">
           {[
             { icon: "🧠", title: "Builds Confidence & Imagination", desc: "Children light up when they see themselves as the star of a magical tale." },
@@ -179,7 +180,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ currentStep, onCreateStoryClick, 
           <p className="text-lg text-slate-700 font-medium mb-2">
             Give your child the most meaningful gift imaginable - a personalized story where they become the hero of their own adventure!
           </p>
-          <h2 className="text-3xl font-bold text-blue-700 mb-4">Welcome to StoryMaker</h2>
+                      <h2 className="text-3xl font-bold text-blue-700 mb-4">Welcome to {APP_CONFIG.title}</h2>
           <p className="text-base text-slate-600">
             We believe every child deserves to see themselves as the hero of amazing stories.
             <br />

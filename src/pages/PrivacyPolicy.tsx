@@ -1,13 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { APP_CONFIG } from '@/config/app';
 
 export default function PrivacyPolicy() {
   return (
     <div className="min-h-screen bg-[#FFFDF9] text-[#333333] font-poppins">
       <main className="max-w-2xl mx-auto py-12 px-4">
-        <h1 className="text-3xl md:text-4xl font-dm-serif mb-6 text-[#8D4BE5] text-center">Privacy Policy — Storymaker by Jcool.in</h1>
+        <h1 className="text-3xl md:text-4xl font-dm-serif mb-6 text-[#8D4BE5] text-center">Privacy Policy — {APP_CONFIG.title} by Jcool.in</h1>
         <p className="mb-6 text-lg text-gray-700 text-center">Effective Date: 7th July 2025</p>
-        <p className="mb-6 text-gray-700">At <span className="font-semibold">Parable Studios</span>, your privacy is our priority. This Privacy Policy explains how we collect, use, share, and protect your personal information when you use <span className="font-semibold">Storymaker by Jcool.in</span>, our platform that allows you to create magical, personalized storybooks for children.</p>
+        <p className="mb-6 text-gray-700">At <span className="font-semibold">Parable Studios</span>, your privacy is our priority. This Privacy Policy explains how we collect, use, share, and protect your personal information when you use <span className="font-semibold">{APP_CONFIG.title} by Jcool.in</span>, our platform that allows you to create magical, personalized storybooks for children.</p>
 
         <ol className="list-decimal list-inside space-y-6 text-gray-800">
           <li>
@@ -73,11 +74,11 @@ export default function PrivacyPolicy() {
           </li>
           <li>
             <span className="font-semibold">Children's Privacy</span>
-            <p className="ml-6 mt-2 text-gray-600">Storymaker is intended for use by parents and guardians. We do not knowingly collect personal information directly from children. All submissions must be made by a consenting adult.</p>
+            <p className="ml-6 mt-2 text-gray-600">{APP_CONFIG.title} is intended for use by parents and guardians. We do not knowingly collect personal information directly from children. All submissions must be made by a consenting adult.</p>
           </li>
           <li>
             <span className="font-semibold">International Data Transfers</span>
-            <p className="ml-6 mt-2 text-gray-600">If you are using Storymaker from outside India, your data may be transferred to, stored, and processed in India or other regions where our partners operate. We ensure these transfers comply with applicable data protection laws.</p>
+            <p className="ml-6 mt-2 text-gray-600">If you are using {APP_CONFIG.title} from outside India, your data may be transferred to, stored, and processed in India or other regions where our partners operate. We ensure these transfers comply with applicable data protection laws.</p>
           </li>
           <li>
             <span className="font-semibold">Changes to This Policy</span>

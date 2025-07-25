@@ -18,6 +18,7 @@ import SidePanel from '@/components/SidePanel';
 import { useContact } from '@/context/ContactContext';
 import Footer from '@/components/Footer';
 import { BASE_URL } from '@/config/api';
+import { APP_CONFIG } from '@/config/app';
 
 interface DashboardStats {
   totalStories: number;
@@ -148,7 +149,7 @@ const Dashboard: React.FC = () => {
               <Button variant="ghost" size="sm" onClick={() => setIsSidePanelOpen(!isSidePanelOpen)} className="p-2 text-[#8D4BE5] hover:text-[#6B21A8] hover:bg-purple-50">
                 <Menu className="w-5 h-5" />
               </Button>
-              <span className="text-xl font-bold text-[#8D4BE5]">StoryMaker</span>
+              <span className="text-xl font-bold text-[#8D4BE5]">{APP_CONFIG.title}</span>
             </div>
           </nav>
         </header> */}

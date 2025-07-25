@@ -30,6 +30,7 @@ import Footer from '@/components/Footer';
 import { trackPhotosRegenerated, trackStoryRegenerated } from '@/utils/gtm';
 import { SAMPLE_PDFS } from '@/components/AppHeader';
 import { BASE_URL } from '@/config/api';
+import { APP_CONFIG } from '@/config/app';
 
 
 // Carousel images for hero section
@@ -51,7 +52,7 @@ function HeroCarousel() {
     <div className="w-80 md:w-96 lg:w-[500px] h-80 md:h-96 lg:h-[500px] bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100 rounded-3xl flex items-center justify-center overflow-hidden shadow-lg">
       <img
         src={carouselImages[index]}
-        alt={`StoryMaker Example ${index + 1}`}
+                        alt={`${APP_CONFIG.title} Example ${index + 1}`}
         className="w-full h-full object-cover rounded-3xl transition-all duration-700"
       />
     </div>
@@ -1994,9 +1995,9 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
           </div>
         </section>
 
-        {/* Why Parents Love StoryMaker */}
+        {/* Why Parents Love {APP_CONFIG.title} */}
         <section className="max-w-6xl mx-auto py-12 px-4">
-          <h2 className="text-2xl md:text-3xl font-semibold mb-8 text-center text-[#333333]">Why Parents Love StoryMaker</h2>
+          <h2 className="text-2xl md:text-3xl font-semibold mb-8 text-center text-[#333333]">Why Parents Love {APP_CONFIG.title}</h2>
           <div className="grid gap-6 md:grid-cols-3">
             {[
               { icon: "🧠", title: "Builds Confidence & Imagination", desc: "Children light up when they see themselves as the star of a magical tale." },

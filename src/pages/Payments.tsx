@@ -24,6 +24,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { apiFetch } from '@/utils/apiInterceptor';
 import { API_ENDPOINTS } from '@/config/api';
+import { APP_CONFIG } from '@/config/app';
 import SidePanel from '@/components/SidePanel';
 import { useContact } from '@/context/ContactContext';
 import Footer from '@/components/Footer';
@@ -257,7 +258,7 @@ const Payments: React.FC = () => {
               <Button variant="ghost" size="sm" onClick={() => setIsSidePanelOpen(!isSidePanelOpen)} className="p-2">
                 <Menu className="w-5 h-5" />
               </Button>
-              <span className="text-xl font-bold text-gray-800">StoryMaker</span>
+                              <span className="text-xl font-bold text-gray-800">{APP_CONFIG.title}</span>
             </div>
           </nav>
         </header> */}
