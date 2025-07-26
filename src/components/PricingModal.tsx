@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { createPaymentOrder, verifyPayment, handleFailedPayment, handleCancelledPayment, CreateOrderRequest, PaymentVerificationRequest } from '@/utils/paymentApi';
+import { redirectToStripeCheckout, openStripeCheckoutInPopup } from '@/utils/stripeCheckout';
 
 import { useAuth } from '@/hooks/useAuth';
 import LoginModal from './LoginModal';
@@ -125,6 +126,137 @@ const PricingModal: React.FC<PricingModalProps> = ({
     }
   }, [open]);
 
+  // Add event listener for Stripe payment success
+  useEffect(() => {
+    const handleStripePaymentSuccess = (event: CustomEvent) => {
+      console.log('✅ Stripe payment success event received:', event.detail);
+      const { sessionId } = event.detail;
+      
+      // Verify the payment with backend
+      verifyStripePayment(sessionId);
+    };
+
+    window.addEventListener('stripe-payment-success', handleStripePaymentSuccess as EventListener);
+
+    return () => {
+      window.removeEventListener('stripe-payment-success', handleStripePaymentSuccess as EventListener);
+    };
+  }, []);
+
+  // Verify Stripe payment with backend
+  const verifyStripePayment = async (sessionId: string) => {
+    try {
+      console.log('🔍 Verifying Stripe payment with session ID:', sessionId);
+      
+      // Call backend to verify the payment
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/stripe/verify-checkout-session/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+        body: JSON.stringify({
+          session_id: sessionId
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Payment verification failed');
+      }
+
+      const verificationResult = await response.json();
+      console.log('✅ Stripe payment verification successful:', verificationResult);
+
+      // Update payment status in database
+      await updatePaymentStatus(verificationResult.order_id || sessionId, 'completed');
+
+      // Trigger payment success callback
+      setPaymentVerifiedWithLog(true, 'Stripe payment verified successfully');
+      onPaymentSuccess();
+      
+      // Close the modal
+      onClose();
+      
+      toast.success('Payment successful! Generating your story...');
+      
+    } catch (error) {
+      console.error('❌ Stripe payment verification failed:', error);
+      toast.error('Payment verification failed. Please contact support.');
+      onPaymentCancellation?.();
+    }
+  };
+
+  // // Update payment status in database
+  // const updatePaymentStatus = async (orderId: string, status: string) => {
+  //   try {
+  //     const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/update-status/`, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //         'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+  //       },
+  //       body: JSON.stringify({
+  //         order_id: orderId,
+  //         status: status
+  //       }),
+  //     });
+
+  //     if (!response.ok) {
+  //       console.warn('⚠️ Failed to update payment status in database');
+  //     } else {
+  //       console.log('✅ Payment status updated in database');
+  //     }
+  //   } catch (error) {
+  //     console.error('❌ Error updating payment status:', error);
+  //   }
+  // };
+
+
+// Add event listener for Stripe payment success
+useEffect(() => {
+  const handleStripePaymentSuccess = (event: CustomEvent) => {
+    console.log('✅ Stripe payment success event received:', event.detail);
+    const { sessionId } = event.detail;
+    
+    // Verify the payment with backend
+    verifyStripePayment(sessionId);
+  };
+
+  window.addEventListener('stripe-payment-success', handleStripePaymentSuccess as EventListener);
+
+  return () => {
+    window.removeEventListener('stripe-payment-success', handleStripePaymentSuccess as EventListener);
+  };
+}, []);
+
+
+// Update payment status in database
+const updatePaymentStatus = async (orderId: string, status: string) => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/update-status/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      },
+      body: JSON.stringify({
+        order_id: orderId,
+        status: status
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn('⚠️ Failed to update payment status in database');
+    } else {
+      console.log('✅ Payment status updated in database');
+    }
+  } catch (error) {
+    console.error('❌ Error updating payment status:', error);
+  }
+};
+
+
+
   if (!open) return null;
 
   const handlePayment = async () => {
@@ -176,8 +308,8 @@ const PricingModal: React.FC<PricingModalProps> = ({
     try {
       const orderRequest: CreateOrderRequest = {
         amount: 49.00,
-        currency: "INR",
         description: "Storymaker Premium",
+        currency: "INR", // This will be overridden by payment mode in the API
       };
       
       // Add story_id if available
@@ -194,10 +326,66 @@ const PricingModal: React.FC<PricingModalProps> = ({
 
       const orderDetails = await createPaymentOrder(orderRequest, isAuthenticated);
 
+      console.log('📋 Order details received:', orderDetails);
+      console.log('💳 Payment mode:', orderDetails.payment_mode);
 
+      // Handle payment based on payment mode
+      if (orderDetails.payment_mode === 'stripe') {
+        console.log('🔵 Processing Stripe payment...');
+        // Handle Stripe payment
+        await handleStripePayment(orderDetails);
+      } else {
+        console.log('🟡 Processing Razorpay payment...');
+        // Handle Razorpay payment
+        await handleRazorpayPayment(orderDetails);
+      }
+    } catch (error) {
+      console.error('Error creating payment order:', error);
+      toast.error('Failed to create payment order. Please try again.');
+    } finally {
+      setPaymentProcessing(false);
+    }
+  };
 
-      const options = {
-        key: orderDetails.razorpay_key_id,
+  // Handle Stripe payment
+  const handleStripePayment = async (orderDetails: CreateOrderResponse) => {
+    try {
+      console.log('💰 Processing Stripe payment:', orderDetails);
+      console.log('🔍 Stripe session ID:', orderDetails.stripe_session_id);
+      console.log('�� Stripe order ID:', orderDetails.stripe_order_id);
+      console.log('🔍 Amount:', orderDetails.amount);
+      console.log('🔍 Currency:', orderDetails.currency);
+      console.log('🔍 Story ID:', orderDetails.story_id);
+      console.log('🔍 Stripe client secret:', orderDetails.stripe_client_secret);
+      
+      // Open Stripe checkout in popup
+      await openStripeCheckoutInPopup({
+        sessionId: orderDetails.stripe_session_id,
+        orderId: orderDetails.stripe_order_id,
+        amount: orderDetails.amount,
+        currency: orderDetails.currency,
+        storyId: orderDetails.story_id,
+        clientSecret: orderDetails.stripe_client_secret,
+      });
+      
+      console.log('✅ Stripe checkout opened in popup');
+    } catch (error) {
+      console.error('❌ Stripe payment error:', error);
+      await handleFailedPayment(
+        orderDetails.stripe_order_id || 'unknown',
+        'Stripe payment failed',
+        undefined,
+        error instanceof Error ? error.message : 'Unknown error'
+      );
+      onPaymentCancellation?.();
+      toast.error('Stripe payment failed. Please try again.');
+    }
+  };
+
+  // Handle Razorpay payment
+  const handleRazorpayPayment = async (orderDetails: CreateOrderResponse) => {
+    const options = {
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID, // Use environment variable for key
         amount: orderDetails.amount,
         currency: orderDetails.currency,
         name: 'Character Canvas Tales',
@@ -371,7 +559,11 @@ const PricingModal: React.FC<PricingModalProps> = ({
             toast.info('Payment was cancelled. You can try again anytime.');
           }
         },
-        prefill: orderDetails.prefill,
+      prefill: {
+        name: isAuthenticated ? 'User' : guestDetails.name,
+        email: isAuthenticated ? 'user@example.com' : guestDetails.email,
+        contact: isAuthenticated ? '+919999999999' : guestDetails.phone,
+      },
         notes: {
           address: 'Character Canvas Tales Corporate Office'
         },
@@ -416,12 +608,6 @@ const PricingModal: React.FC<PricingModalProps> = ({
       });
 
       rzp.open();
-    } catch (error) {
-      console.error('Error creating payment order:', error);
-      toast.error('Failed to create payment order. Please try again.');
-    } finally {
-      setPaymentProcessing(false);
-    }
   };
 
   return (
@@ -589,5 +775,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
     </div>
   );
 };
+
+import { CreateOrderResponse } from '@/utils/paymentApi';
 
 export default PricingModal; 

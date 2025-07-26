@@ -18,9 +18,11 @@ import PaymentRefundPolicy from "./pages/PaymentRefundPolicy";
 import SidePanel from "./components/SidePanel";
 import { useState, useEffect } from "react";
 import StoryPage from './pages/StoryPage';
+import StripeCheckout from './pages/StripeCheckout';
 import { ContactProvider } from "./context/ContactContext";
 import { useAuth } from "@/hooks/useAuth";
 import LoginModal from "@/components/LoginModal";
+import PaymentSuccess from "./pages/PaymentSuccess";
 
 const queryClient = new QueryClient();
 
@@ -102,8 +104,10 @@ export const App = () => {
             <Route path="/stories-history" element={<StoriesHistory />} />
             {/* <Route path="/settings" element={<Settings />} /> */}
             <Route path="/payments" element={<Payments />} />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="/payment-refund-policy" element={<PaymentRefundPolicy />} />
             <Route path="/story/:id" element={<StoryPage />} />
+            <Route path="/stripe-checkout" element={<StripeCheckout />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/oauth/callback" element={<OAuthCallbackPage />} />

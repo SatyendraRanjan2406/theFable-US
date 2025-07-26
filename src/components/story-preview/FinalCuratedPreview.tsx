@@ -978,7 +978,6 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
           </div>
         </CardContent>
       </Card>
-
       {/* Pricing Modal - Rendered at root level for proper overlay */}
       <PricingModal
         open={isPricingModalOpen}
@@ -991,7 +990,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
           handlePaymentSuccess();
         }}
         onPaymentCancellation={() => {
-          console.log('❌ PricingModal onPaymentCancellation called');
+          console.log('❌ PricingModal onPaymentCancellation called' );
           handlePaymentCancellation();
         }}
         storyId={curatedStoryResult?.story_id || ''}

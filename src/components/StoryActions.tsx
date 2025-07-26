@@ -89,13 +89,13 @@ const StoryActions: React.FC<StoryActionsProps> = ({
         }
         
         // Convert generatedImages to array format
-        let imagesArray: (string | null)[] = [];
-        if (Array.isArray(generatedImages)) {
-          imagesArray = generatedImages;
-        } else {
-          const imageKeys = Object.keys(generatedImages);
-          imagesArray = imageKeys.map(key => generatedImages[key]).filter(img => img && img !== 'undefined');
-        }
+      let imagesArray: (string | null)[] = [];
+      if (Array.isArray(generatedImages)) {
+        imagesArray = generatedImages;
+      } else {
+        const imageKeys = Object.keys(generatedImages);
+        imagesArray = imageKeys.map(key => generatedImages[key]).filter(img => img && img !== 'undefined');
+      }
         
         console.log('🤖 Images array:', imagesArray.length, 'images');
         
