@@ -101,7 +101,7 @@ export const createPaymentOrder = async (
       throw new Error('Guest name, email, and phone are required for anonymous users');
     }
   }
-
+  debugger;
   const requestBody: CreateOrderRequest = {
     amount: orderData.amount,
     currency: orderData.currency,

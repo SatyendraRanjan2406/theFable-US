@@ -323,9 +323,9 @@ const updatePaymentStatus = async (orderId: string, status: string) => {
         orderRequest.guest_email = guestDetails.email;
         orderRequest.guest_phone = phoneNumber; // Use the processed phone number with +91 prefix
       }
-
+      debugger;
       const orderDetails = await createPaymentOrder(orderRequest, isAuthenticated);
-
+      debugger;
       console.log('📋 Order details received:', orderDetails);
       console.log('💳 Payment mode:', orderDetails.payment_mode);
 
@@ -336,6 +336,7 @@ const updatePaymentStatus = async (orderId: string, status: string) => {
         await handleStripePayment(orderDetails);
       } else {
         console.log('🟡 Processing Razorpay payment...');
+        debugger;
         // Handle Razorpay payment
         await handleRazorpayPayment(orderDetails);
       }
@@ -384,8 +385,9 @@ const updatePaymentStatus = async (orderId: string, status: string) => {
 
   // Handle Razorpay payment
   const handleRazorpayPayment = async (orderDetails: CreateOrderResponse) => {
+    debugger
     const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID, // Use environment variable for key
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID, // Use environment variable for key
         amount: orderDetails.amount,
         currency: orderDetails.currency,
         name: 'Character Canvas Tales',
@@ -559,11 +561,11 @@ const updatePaymentStatus = async (orderId: string, status: string) => {
             toast.info('Payment was cancelled. You can try again anytime.');
           }
         },
-      prefill: {
-        name: isAuthenticated ? 'User' : guestDetails.name,
-        email: isAuthenticated ? 'user@example.com' : guestDetails.email,
-        contact: isAuthenticated ? '+919999999999' : guestDetails.phone,
-      },
+        prefill: {
+          name: isAuthenticated ? 'User' : guestDetails.name,
+          email: isAuthenticated ? 'user@example.com' : guestDetails.email,
+          contact: isAuthenticated ? '+919999999999' : guestDetails.phone,
+        },
         notes: {
           address: 'Character Canvas Tales Corporate Office'
         },

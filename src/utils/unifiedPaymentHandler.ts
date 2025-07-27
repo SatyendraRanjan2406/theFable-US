@@ -46,6 +46,7 @@ export class UnifiedPaymentHandler {
   }
 
   async processPayment(orderResponse: CreateOrderResponse): Promise<void> {
+    debugger;
     try {
       if (isStripeOrder(orderResponse)) {
         await this.handleStripePayment(orderResponse);
