@@ -26,33 +26,38 @@
 
 import { apiFetch } from '@/utils/apiInterceptor';
 import { API_ENDPOINTS } from '@/config/api';
+import { getPaymentMode } from './paymentConfig';
 
 export interface CreateOrderRequest {
   amount: number;
   currency: string;
-  // Guest user fields (required for anonymous users)
+  payment_mode?: 'stripe' | 'razorpay';
+  story_id?: string;
+  description?: string;
   guest_name?: string;
   guest_email?: string;
   guest_phone?: string;
-  // Optional fields
-  description?: string;
-  story_id?: string; // Story ID for linking payment to specific story
 }
 
 export interface CreateOrderResponse {
-  razorpay_order_id: string;
-  razorpay_key_id: string;
-  amount: number;
-  currency: string;
-  name: string;
-  description: string;
-  prefill: {
+  payment_mode: 'stripe' | 'razorpay';
+  stripe_order_id?: string;
+  stripe_client_secret?: string;
+  stripe_session_id?: string; // Add session ID for Stripe Checkout
+  razorpay_order_id?: string;
+  prefill?:{
     name: string;
     email: string;
     contact: string;
   };
-  // For guest users, this field will be included in the response
-  non_logged_in_user_id?: string;
+  amount: number;
+  currency: string;
+  stories_linked: number;
+  story_id?: string;
+  story_updated: boolean;
+  previous_order_id?: string;
+  non_logged_in_user_id?: number;
+  razorpay_key_id?: string;
 }
 
 export interface PaymentVerificationRequest {
@@ -95,6 +100,12 @@ export const createPaymentOrder = async (
   orderData: CreateOrderRequest,
   isAuthenticated: boolean = false
 ): Promise<CreateOrderResponse> => {
+  // Get payment mode from environment configuration
+  const paymentMode = getPaymentMode();
+  
+  // Set currency based on payment mode
+  const currency = paymentMode === 'stripe' ? 'USD' : 'INR';
+  
   // Validate required fields based on authentication status
   if (!isAuthenticated) {
     if (!orderData.guest_name || !orderData.guest_email || !orderData.guest_phone) {
@@ -102,10 +113,22 @@ export const createPaymentOrder = async (
     }
   }
 
+  // Build request body with payment_mode automatically from config
   const requestBody: CreateOrderRequest = {
     amount: orderData.amount,
-    currency: orderData.currency,
+    currency: currency, // Auto-set based on payment mode: USD for Stripe, INR for Razorpay
+    payment_mode: paymentMode, // Automatically picked from VITE_PAYMENT_MODE
   };
+
+  // Add story_id if provided
+  if (orderData.story_id) {
+    requestBody.story_id = orderData.story_id;
+  }
+
+  // Add description if provided
+  if (orderData.description) {
+    requestBody.description = orderData.description;
+  }
 
   // Add guest details for anonymous users
   if (!isAuthenticated) {
@@ -114,15 +137,10 @@ export const createPaymentOrder = async (
     requestBody.guest_phone = orderData.guest_phone;
   }
 
-  // Add optional description if provided
-  if (orderData.description) {
-    requestBody.description = orderData.description;
-  }
-
-  // Add story_id if provided
-  if (orderData.story_id) {
-    requestBody.story_id = orderData.story_id;
-  }
+  console.log('Creating payment order with mode:', paymentMode);
+  console.log('Currency set to:', currency);
+  console.log('Request body:', requestBody);
+  console.log('Is authenticated:', isAuthenticated);
 
   try {
     const response = await apiFetch(API_ENDPOINTS.payments.createOrder, {
@@ -133,7 +151,8 @@ export const createPaymentOrder = async (
     if (!response) {
       throw new Error('Failed to retrieve order details.');
     }
-
+    debugger
+    console.log('Order created successfully:', response);
     return response;
   } catch (error) {
     console.error('Payment order creation failed:', error);
@@ -341,5 +360,72 @@ export const handleCancelledPayment = async (
     }
     
     // Don't throw error to prevent breaking the UI flow
+  }
+}; 
+
+// Helper functions for creating payment orders
+
+export const createLoggedInUserOrder = async (
+  amount: number,
+  storyId?: string,
+  description?: string
+): Promise<CreateOrderResponse> => {
+  const paymentMode = getPaymentMode();
+  const currency = paymentMode === 'stripe' ? 'USD' : 'INR';
+  
+  return createPaymentOrder(
+    {
+      amount,
+      currency,
+      story_id: storyId,
+      description: description || 'Storymaker Premium',
+    },
+    true // isAuthenticated = true
+  );
+};
+
+export const createGuestUserOrder = async (
+  amount: number,
+  guestName: string,
+  guestEmail: string,
+  guestPhone: string,
+  storyId?: string,
+  description?: string
+): Promise<CreateOrderResponse> => {
+  const paymentMode = getPaymentMode();
+  const currency = paymentMode === 'stripe' ? 'USD' : 'INR';
+  
+  return createPaymentOrder(
+    {
+      amount,
+      currency,
+      guest_name: guestName,
+      guest_email: guestEmail,
+      guest_phone: guestPhone,
+      story_id: storyId,
+      description: description || 'Storymaker Premium',
+    },
+    false // isAuthenticated = false
+  );
+};
+
+// Convenience function that automatically detects authentication status
+export const createOrder = async (
+  amount: number,
+  storyId?: string,
+  description?: string,
+  guestName?: string,
+  guestEmail?: string,
+  guestPhone?: string
+): Promise<CreateOrderResponse> => {
+  const isAuthenticated = !!localStorage.getItem('access_token');
+  
+  if (isAuthenticated) {
+    return createLoggedInUserOrder(amount, storyId, description);
+  } else {
+    if (!guestName || !guestEmail || !guestPhone) {
+      throw new Error('Guest name, email, and phone are required for non-authenticated users');
+    }
+    return createGuestUserOrder(amount, guestName, guestEmail, guestPhone, storyId, description);
   }
 }; 

@@ -786,7 +786,7 @@ const StoryOutlineEditor: React.FC<StoryOutlineEditorProps> = ({
                 variant="outline"
                 className="w-full h-12 border-2 border-purple-300 text-purple-700 hover:bg-purple-50 font-semibold"
               >
-                🚀 Try Product First!
+                I want to try it first!
               </Button>
             </div>
 

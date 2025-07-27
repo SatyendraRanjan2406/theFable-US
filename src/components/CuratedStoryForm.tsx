@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import CharacterDetailsForm from './CharacterDetailsForm';
 import PhotoUploadField from './PhotoUploadField';
 import { toast } from 'sonner';
@@ -56,6 +56,38 @@ const CuratedStoryForm: React.FC<CuratedStoryFormProps> = ({
   isGenerating = false
 }) => {
 
+  // Keep view at top when form loads
+  useEffect(() => {
+    // Prevent any auto-scrolling behavior
+    const preventAutoScroll = () => {
+      window.scrollTo(0, 0);
+    };
+
+    // Scroll to top immediately when component mounts
+    window.scrollTo(0, 0);
+    
+    // Also ensure the form container is at the top
+    const formContainer = document.querySelector('.curated-story-form');
+    if (formContainer) {
+      formContainer.scrollIntoView({ behavior: 'instant', block: 'start' });
+    }
+
+    // Prevent any form elements from auto-focusing and causing scroll
+    const formElements = document.querySelectorAll('input, textarea, select, button');
+    formElements.forEach((element) => {
+      if (element instanceof HTMLElement) {
+        element.blur();
+      }
+    });
+
+    // Add a small delay to ensure scroll position is maintained
+    const timer = setTimeout(() => {
+      window.scrollTo(0, 0);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleGenerateClick = () => {
     if (selectedStory) {
       // Check if user has selected a photo for the story
@@ -70,7 +102,7 @@ const CuratedStoryForm: React.FC<CuratedStoryFormProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="curated-story-form space-y-6">
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white p-6">

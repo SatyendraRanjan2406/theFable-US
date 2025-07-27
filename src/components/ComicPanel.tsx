@@ -32,7 +32,7 @@ interface ComicPanelProps {
   characterPhotoFile?: File | null;
   onUnlockClick?: () => void;
   onRetry?: () => void;
-  viewMode?: 'grid' | 'split';
+  viewMode?: 'grid' | 'split' | 'fullscreen';
   errorImages?: {[key: string]: boolean} | {[key: number]: boolean};
   retryLoadingPanels?: {[key: string]: boolean};
   onRegenerate?: (index: number, panelId?: string) => void;
@@ -190,14 +190,22 @@ const ComicPanel: React.FC<ComicPanelProps> = ({
 
   return (
     <div 
-      className={`border-2 border-gray-400 rounded-lg p-3 bg-gray-50 ${
-        viewMode === 'split' ? 'min-h-[400px]' : 'min-h-[200px]'
+      className={`${
+        viewMode === 'fullscreen' 
+          ? 'relative w-full max-w-sm mx-auto rounded-lg overflow-hidden' 
+          : 'border-2 border-gray-400 rounded-lg p-3 bg-gray-50'
+      } ${
+        viewMode === 'fullscreen' ? 'aspect-[1/1.41]' : viewMode === 'split' ? 'min-h-[400px]' : 'min-h-[200px]'
       } ${onClick ? 'cursor-pointer hover:bg-gray-100 transition-colors' : ''}`}
       onClick={onClick}
     >
       {/* Scene Image */}
-      <div className={`relative rounded-lg mb-3 overflow-hidden border-2 border-dashed border-gray-300 bg-white ${
-        viewMode === 'split' ? 'h-80' : 'h-64'
+      <div className={`${
+        viewMode === 'fullscreen' 
+          ? 'absolute inset-0 w-full h-full' 
+          : 'relative rounded-lg mb-3 overflow-hidden border-2 border-dashed border-gray-300 bg-white'
+      } ${
+        viewMode === 'fullscreen' ? '' : viewMode === 'split' ? 'h-80' : 'h-64'
       }`}>
         {shouldShowLocked ? (
           <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center text-center p-4">
@@ -258,7 +266,9 @@ const ComicPanel: React.FC<ComicPanelProps> = ({
           <img 
             src={imageUrl || sceneImage || (panelData && (panelData.aws_s3_image_url || panelData.minimax_image_url))}
             alt={`Scene for: ${displayText}`}
-            className="w-full h-full object-contain"
+            className={`w-full h-full ${
+              viewMode === 'fullscreen' ? 'object-cover' : 'object-contain'
+            }`}
             onLoad={() => console.log('Character-consistent image successfully displayed for panel:', panelIndex)}
             onError={(e) => {
               setImageLoadFailed(true);
@@ -297,7 +307,9 @@ const ComicPanel: React.FC<ComicPanelProps> = ({
               setImageLoadFailed(false); // Reset failed state when regenerating
               onRegenerate(panelIndex, panelData?.id);
             }}
-            className="absolute bottom-2 right-2 bg-black/50 p-2 rounded-full text-white hover:bg-black/75 transition-colors"
+            className={`absolute bg-black/50 p-2 rounded-full text-white hover:bg-black/75 transition-colors ${
+              viewMode === 'fullscreen' ? 'top-2 right-2 z-10' : 'bottom-2 right-2'
+            }`}
             aria-label="Regenerate image"
             disabled={isRegenerating}
           >
@@ -307,7 +319,9 @@ const ComicPanel: React.FC<ComicPanelProps> = ({
         
         {/* AI indicator with character consistency info */}
         {!imageLoading && !isLoading && !(retryLoadingPanels && retryLoadingPanels[panelIndex]) && hasImage && !imageLoadFailed && (
-          <div className="absolute top-1 right-1">
+          <div className={`absolute top-1 right-1 ${
+            viewMode === 'fullscreen' ? 'z-10' : ''
+          }`}>
             <div className="bg-green-500/80 text-white text-xs px-2 py-1 rounded">
               {characterPhoto ? 'Character Consistent' : 'AI Generated'}
             </div>
@@ -316,7 +330,9 @@ const ComicPanel: React.FC<ComicPanelProps> = ({
         
         {/* Lock indicator for locked panels */}
         {shouldShowLocked && (
-          <div className="absolute top-1 right-1">
+          <div className={`absolute top-1 right-1 ${
+            viewMode === 'fullscreen' ? 'z-10' : ''
+          }`}>
             <div className="bg-gray-500/80 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
               <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
@@ -328,10 +344,16 @@ const ComicPanel: React.FC<ComicPanelProps> = ({
       </div>
       
       {/* Panel text */}
-      <div className={`text-sm bg-white rounded border p-3 ${
-        viewMode === 'split' ? 'text-base' : ''
+      <div className={`${
+        viewMode === 'fullscreen' 
+          ? 'absolute bottom-0 left-0 right-0 bg-black/70 text-white p-1 text-[10px]'
+          : 'text-sm bg-white rounded border p-3'
+      } ${
+        viewMode === 'fullscreen' ? '' : viewMode === 'split' ? 'text-base' : ''
       }`}>
-        <p className="text-gray-700 leading-relaxed">{displayText}</p>
+        <p className={`leading-relaxed ${
+          viewMode === 'fullscreen' ? 'text-white' : 'text-gray-700'
+        }`}>{displayText}</p>
         
         {/* Debug info - show panel data when available */}
         {/* {panelData && (
