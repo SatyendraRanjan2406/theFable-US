@@ -45,6 +45,11 @@ export interface CreateOrderResponse {
   stripe_client_secret?: string;
   stripe_session_id?: string; // Add session ID for Stripe Checkout
   razorpay_order_id?: string;
+  prefill?:{
+    name: string;
+    email: string;
+    contact: string;
+  };
   amount: number;
   currency: string;
   stories_linked: number;
@@ -52,6 +57,7 @@ export interface CreateOrderResponse {
   story_updated: boolean;
   previous_order_id?: string;
   non_logged_in_user_id?: number;
+  razorpay_key_id?: string;
 }
 
 export interface PaymentVerificationRequest {
