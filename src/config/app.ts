@@ -33,6 +33,14 @@ export const APP_CONFIG = {
       import.meta.env.VITE_CAROUSEL_IMAGE_2 || "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/web_assets/6.png",
       import.meta.env.VITE_CAROUSEL_IMAGE_3 || "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/web_assets/demo.jpeg"
     ]
+  },
+  
+  // Payment configuration
+  payment: {
+    amount: parseFloat(import.meta.env.VITE_PAYMENT_AMOUNT || '5.00'),
+    originalPrice: parseFloat(import.meta.env.VITE_PAYMENT_ORIGINAL_PRICE || '199.00'),
+    currency: import.meta.env.VITE_PAYMENT_CURRENCY || 'INR',
+    description: 'Storymaker Premium'
   }
 };
 
@@ -69,4 +77,41 @@ export const getCarouselImages = (): string[] => {
   }
   
   return validImages;
+};
+
+// Helper function to get payment configuration
+export const getPaymentConfig = () => {
+  return {
+    amount: APP_CONFIG.payment.amount,
+    currency: APP_CONFIG.payment.currency,
+    description: APP_CONFIG.payment.description
+  };
+};
+
+// Helper function to get formatted payment amount
+export const getFormattedPaymentAmount = (): string => {
+  const { amount, currency } = APP_CONFIG.payment;
+  
+  // Format based on currency
+  if (currency === 'INR') {
+    return `₹${amount.toFixed(2)}`;
+  } else if (currency === 'USD') {
+    return `$${amount.toFixed(2)}`;
+  } else {
+    return `${amount.toFixed(2)} ${currency}`;
+  }
+};
+
+// Helper function to get formatted original price
+export const getFormattedOriginalPrice = (): string => {
+  const { originalPrice, currency } = APP_CONFIG.payment;
+  
+  // Format based on currency
+  if (currency === 'INR') {
+    return `₹${originalPrice.toFixed(2)}`;
+  } else if (currency === 'USD') {
+    return `$${originalPrice.toFixed(2)}`;
+  } else {
+    return `${originalPrice.toFixed(2)} ${currency}`;
+  }
 }; 

@@ -6,6 +6,7 @@ import { redirectToStripeCheckout, openStripeCheckoutInPopup } from '@/utils/str
 import { useAuth } from '@/hooks/useAuth';
 import LoginModal from './LoginModal';
 import { logPaymentFlow, validateRazorpayResponse, getPaymentTroubleshootingTips } from '@/utils/paymentDebug';
+import { getPaymentConfig, getFormattedPaymentAmount, getFormattedOriginalPrice } from '@/config/app';
 
 // Define Razorpay type to avoid TypeScript errors
 interface RazorpayResponse {
@@ -306,10 +307,11 @@ const updatePaymentStatus = async (orderId: string, status: string) => {
     setPaymentProcessing(true);
     
     try {
+      const paymentConfig = getPaymentConfig();
       const orderRequest: CreateOrderRequest = {
-        amount: 49.00,
-        description: "Storymaker Premium",
-        currency: "INR", // This will be overridden by payment mode in the API
+        amount: paymentConfig.amount,
+        description: paymentConfig.description,
+        currency: paymentConfig.currency, // This will be overridden by payment mode in the API
       };
       
       // Add story_id if available
@@ -719,8 +721,8 @@ const updatePaymentStatus = async (orderId: string, status: string) => {
             </p>
             <div className="text-center mb-6">
               <div className="flex items-center justify-center gap-2 mb-1">
-                <span className="text-3xl font-bold text-purple-600">₹49</span>
-                <span className="text-xl text-gray-400 line-through">₹199</span>
+                <span className="text-3xl font-bold text-purple-600">{getFormattedPaymentAmount()}</span>
+                <span className="text-xl text-gray-400 line-through">{getFormattedOriginalPrice()}</span>
               </div>
               <div className="text-sm text-orange-600 font-semibold">Limited Time Offer!</div>
               {/* <span className="text-gray-500">one-time</span> */}
