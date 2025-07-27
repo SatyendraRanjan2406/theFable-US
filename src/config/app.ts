@@ -24,6 +24,15 @@ export const APP_CONFIG = {
   urls: {
     website: `https://${import.meta.env.VITE_APP_DOMAIN || 'storymaker.jcool.in'}`,
     api: import.meta.env.VITE_API_BASE_URL || 'https://api.srujana.solutions',
+  },
+  
+  // Carousel images for hero section
+  carousel: {
+    images: [
+      import.meta.env.VITE_CAROUSEL_IMAGE_1 || "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/web_assets/3.png",
+      import.meta.env.VITE_CAROUSEL_IMAGE_2 || "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/web_assets/6.png",
+      import.meta.env.VITE_CAROUSEL_IMAGE_3 || "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/web_assets/demo.jpeg"
+    ]
   }
 };
 
@@ -41,4 +50,23 @@ export const getPoweredByText = (): string => {
 // Helper function to get copyright text
 export const getCopyrightText = (): string => {
   return `${APP_CONFIG.domain} © ${APP_CONFIG.copyrightYear} ${APP_CONFIG.company}. All rights reserved.`;
+};
+
+// Helper function to get carousel images with validation
+export const getCarouselImages = (): string[] => {
+  const images = APP_CONFIG.carousel.images;
+  
+  // Filter out any empty or invalid URLs
+  const validImages = images.filter(img => img && img.trim() !== '');
+  
+  // If no valid images, return default fallback
+  if (validImages.length === 0) {
+    return [
+      "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/web_assets/3.png",
+      "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/web_assets/6.png",
+      "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/web_assets/demo.jpeg"
+    ];
+  }
+  
+  return validImages;
 }; 

@@ -30,15 +30,11 @@ import Footer from '@/components/Footer';
 import { trackPhotosRegenerated, trackStoryRegenerated } from '@/utils/gtm';
 import { SAMPLE_PDFS } from '@/components/AppHeader';
 import { BASE_URL } from '@/config/api';
-import { APP_CONFIG } from '@/config/app';
+import { APP_CONFIG, getCarouselImages } from '@/config/app';
 
 
-// Carousel images for hero section
-const carouselImages = [
-  "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/web_assets/3.png",
-  "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/web_assets/6.png",
-  "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/web_assets/demo.jpeg"
-];
+// Carousel images for hero section - configurable from environment variables
+const carouselImages = getCarouselImages();
 
 function HeroCarousel() {
   const [index, setIndex] = useState(0);
