@@ -37,8 +37,8 @@ export const APP_CONFIG = {
   
   // Payment configuration
   payment: {
-    amount: parseFloat(import.meta.env.VITE_PAYMENT_AMOUNT || '5.00'),
-    originalPrice: parseFloat(import.meta.env.VITE_PAYMENT_ORIGINAL_PRICE || '199.00'),
+    amount: parseFloat(import.meta.env.VITE_PAYMENT_AMOUNT || '2.00'),
+    originalPrice: parseFloat(import.meta.env.VITE_PAYMENT_ORIGINAL_PRICE || '5.00'),
     currency: import.meta.env.VITE_PAYMENT_CURRENCY || 'INR',
     description: 'Storymaker Premium'
   }

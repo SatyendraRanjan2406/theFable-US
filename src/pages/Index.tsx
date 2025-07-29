@@ -1935,7 +1935,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
               onClick={handleCreateStoryClick}
               className="bg-gradient-to-r from-[#EC6B43] to-[#D946EF] text-white px-8 py-3 rounded-full shadow-lg text-lg font-medium hover:from-[#D55A3A] hover:to-[#C026D6] transition-all duration-300 transform hover:scale-105"
             >
-              Create Your Story Now using AI
+              Create Your Story Now 
             </button>
             
             <div className="flex items-center justify-center mt-4 mb-6">
@@ -2145,7 +2145,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
             onClick={handleCreateStoryClick}
             className="bg-gradient-to-r from-[#EC6B43] to-[#D946EF] text-white px-8 py-3 rounded-full shadow-lg text-lg font-medium hover:from-[#D55A3A] hover:to-[#C026D6] transition-all duration-300"
           >
-            Create Your Story Now using AI
+            Create Your Story Now
           </button>
         </div>
 
