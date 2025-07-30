@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ComicPanel from './ComicPanel';
 import PricingModal from './PricingModal';
 import { Grid, Split, Download, FileText, Image, Monitor } from 'lucide-react';
@@ -176,7 +176,26 @@ const ComicBook: React.FC<ComicBookProps> = ({
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
   const [isDownloadingImages, setIsDownloadingImages] = useState(false);
 
-  const handlePaymentSuccess = async () => {
+  // Listen for payment success events
+  useEffect(() => {
+    const handlePaymentSuccessEvent = () => {
+      console.log('🎨 ComicBook: Payment success event received');
+      handlePaymentSuccess();
+    };
+
+    // Listen for custom payment success events
+    window.addEventListener('payment-success', handlePaymentSuccessEvent);
+    
+    // Also listen for Stripe payment success events
+    window.addEventListener('stripe-payment-success', handlePaymentSuccessEvent);
+
+    return () => {
+      window.removeEventListener('payment-success', handlePaymentSuccessEvent);
+      window.removeEventListener('stripe-payment-success', handlePaymentSuccessEvent);
+    };
+  }, [handlePaymentSuccess]);
+
+  const handlePaymentSuccess = useCallback(async () => {
     console.log('🎨 ComicBook handlePaymentSuccess called');
     
     if (!onGenerateLockedImages) {
@@ -200,7 +219,7 @@ const ComicBook: React.FC<ComicBookProps> = ({
     } finally {
       setIsGeneratingLockedImages(false);
     }
-  };
+  }, [onGenerateLockedImages, isGeneratingLockedImages]);
 
   // Utility functions (same as StoryActions)
   async function urlToFile(url: string, filename: string) {

@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { generatePhoneOTP, verifyPhoneOTP, generateEmailOTP, verifyEmailOTP } from '@/utils/authApi';
 import { initiateGoogleSSO } from '@/utils/authApi';
+import { handleOAuthLogin } from '@/utils/browserUtils';
 
 const emailSchema = z.string().email();
 const phoneSchema = z.string().regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number');
@@ -31,16 +32,27 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
     const result = await initiateGoogleSSO();
 
     if (result.success && result.authorizationUrl) {
-      // Open the authorization URL in a new tab
-      window.open(result.authorizationUrl, '_blank', 'noopener,noreferrer');
+      // Use enhanced OAuth login handler with proper popup monitoring
+      await handleOAuthLogin(
+        result.authorizationUrl,
+        () => {
+          // Success callback
+          toast.success('🎉 Google login successful!');
+          onLoginSuccess();
+        },
+        (errorMessage) => {
+          // Error callback
+          setError(errorMessage);
+          toast.error(`Google Login Failed: ${errorMessage}`);
+        }
+      );
     } else {
       const errorMessage = result.error || 'An unknown error occurred.';
       setError(errorMessage);
       toast.error(`Google Login Failed: ${errorMessage}`);
     }
 
-    // Since we are opening a new tab and not leaving the page,
-    // we must reset the loading state.
+    // Reset loading state
     setIsSSOLoading(false);
   };
 

@@ -220,20 +220,39 @@ export const testOTPAPI = async (testPhoneNumber: string = '+1234567890'): Promi
 export const initiateGoogleSSO = async (): Promise<{ success: boolean; authorizationUrl?: string; error?: string }> => {
   try {
     console.log('🚀 Initiating Google SSO login');
+    console.log('🔗 SSO URL:', API_ENDPOINTS.auth.googleSSO);
+    console.log('🌐 Backend base URL:', DYNAMIC_BASE_URL);
+    
     const response = await fetch(API_ENDPOINTS.auth.googleSSO, {
       method: 'POST',
       headers: API_CONFIG.headers,
       body: JSON.stringify({}), // Empty body as per the curl example
     });
 
-    const data = await response.json();
+    console.log('📡 SSO Response status:', response.status);
+    console.log('📡 SSO Response status text:', response.statusText);
+
+    let data;
+    try {
+      data = await response.json();
+      console.log('📄 SSO Response data:', data);
+    } catch (jsonError) {
+      console.error('❌ Failed to parse SSO JSON response:', jsonError);
+      const textResponse = await response.text();
+      console.log('📄 Raw SSO response text:', textResponse);
+      return { 
+        success: false, 
+        error: `Invalid SSO response from server: ${response.status} ${response.statusText}`
+      };
+    }
 
     if (response.ok && data.authorization_url) {
       console.log('✅ Received authorization URL from backend:', data.authorization_url);
       return { success: true, authorizationUrl: data.authorization_url };
     } else {
-      const errorMessage = data.detail || 'Backend did not provide an authorization_url.';
-      console.error('❌ Google SSO Initiation Error:', errorMessage, data);
+      const errorMessage = data.detail || data.message || data.error || 'Backend did not provide an authorization_url.';
+      console.error('❌ Google SSO Initiation Error:', errorMessage);
+      console.error('❌ Full SSO response:', data);
       return { success: false, error: errorMessage };
     }
   } catch (error) {
@@ -250,21 +269,50 @@ export const initiateGoogleSSO = async (): Promise<{ success: boolean; authoriza
  */
 export const handleGoogleCallback = async (code: string, state: string): Promise<{ success: boolean; data?: AuthResponse; error?: string }> => {
   try {
-    console.log('🤝 Sending authorization code and state to backend');
+    console.log('🤝 Exchanging authorization code for token...');
+    console.log('🔗 Callback URL:', API_ENDPOINTS.auth.googleCallback);
+    console.log('📋 Request payload:', { 
+      code: code.substring(0, 10) + '...', 
+      state 
+    });
+    console.log('🌐 Backend base URL:', DYNAMIC_BASE_URL);
+
     const response = await fetch(API_ENDPOINTS.auth.googleCallback, {
       method: 'POST',
       headers: API_CONFIG.headers,
       body: JSON.stringify({ code, state }),
     });
 
-    const data = await response.json();
+    console.log('📡 Response status:', response.status);
+    console.log('📡 Response status text:', response.statusText);
+    console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+
+    let data;
+    try {
+      data = await response.json();
+      console.log('📄 Response data:', data);
+    } catch (jsonError) {
+      console.error('❌ Failed to parse JSON response:', jsonError);
+      const textResponse = await response.text();
+      console.log('📄 Raw response text:', textResponse);
+      return { 
+        success: false, 
+        error: `Invalid response from server: ${response.status} ${response.statusText}`
+      };
+    }
 
     if (response.ok) {
-      console.log('✅ Successfully exchanged code for token:', data);
+      console.log('✅ Successfully exchanged code for token');
       return { success: true, data };
     } else {
-      const errorMessage = data.detail || 'Failed to exchange authorization code for token.';
-      console.error('❌ Callback Error:', errorMessage, data);
+      const errorMessage = data.detail || data.message || data.error || 'Failed to exchange authorization code for token.';
+      console.error('❌ Callback Error:', errorMessage);
+      
+      // Log specific error details
+      if (data.detail) console.error('❌ Detail:', data.detail);
+      if (data.message) console.error('❌ Message:', data.message);
+      if (data.error) console.error('❌ Error:', data.error);
+      
       return { success: false, error: errorMessage };
     }
   } catch (error) {

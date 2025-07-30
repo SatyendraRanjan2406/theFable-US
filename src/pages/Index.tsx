@@ -888,7 +888,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     // Clear image generation cache for fresh start
     clearVisualContinuityCache();
     // Clear ALL persisted storage for a fresh start
-    localStorage.removeItem('formData');
+    sessionStorage.removeItem('formData');
     localStorage.removeItem('generatedStory');
     localStorage.removeItem('generatedImageUrls');
     localStorage.removeItem('storyStep');
@@ -1911,7 +1911,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
         storyId={storyId}
         panels={panelsData}
         isPaid={isPaid}
-       
+        onGenerateLockedImages={generateLockedImages}
       />
     );
     }

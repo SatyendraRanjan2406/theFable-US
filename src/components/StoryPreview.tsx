@@ -44,7 +44,7 @@ interface StoryPreviewProps {
   storyId?: string; // NEW: story ID for edit mode
   panels?: any[]; // NEW: panels data from API for edit mode
   isPaid?: boolean; // NEW: payment status for edit mode
-
+  onGenerateLockedImages?: () => Promise<void>; // NEW: payment success handler
 }
 
 const StoryPreview: React.FC<StoryPreviewProps> = ({
@@ -76,7 +76,7 @@ const StoryPreview: React.FC<StoryPreviewProps> = ({
   storyId,
   panels,
   isPaid,
-
+  onGenerateLockedImages,
 }) => {
   // All state and logic is now lifted to Index.tsx or passed down.
   // This component now primarily acts as a router for different states.
@@ -112,7 +112,7 @@ const StoryPreview: React.FC<StoryPreviewProps> = ({
       loadingImages={{}}
       hfApiKey={hfApiKey}
       generatedImages={{}}
-      onGenerateLockedImages={async () => {}}
+      onGenerateLockedImages={onGenerateLockedImages}
       onRetryImage={onRegeneratePanelImage}
       errorImages={errorImages || {}}
       retryLoadingPanels={{}}

@@ -48,128 +48,100 @@ const PhotoUploadField: React.FC<PhotoUploadFieldProps> = ({
   const [isCartoonModalOpen, setIsCartoonModalOpen] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [selectedForStory, setSelectedForStory] = useState<'original' | 'cartoon' | null>(null);
-  const [uploadCache, setUploadCache] = useState<Record<string, string>>({});
-  const [isCacheLoaded, setIsCacheLoaded] = useState(false); // Track cache loading state
-  const [processedPhotoKey, setProcessedPhotoKey] = useState<string | null>(null); // Track last processed photo
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load upload cache from localStorage on component mount
+  // Load photo data from sessionStorage on component mount
   useEffect(() => {
-    console.log('🏗️ [CACHE DEBUG] PhotoUploadField mounting, loading cache...');
+    console.log('🔄 Loading photo data from sessionStorage...');
     try {
-      const savedCache = localStorage.getItem('photoUploadCache');
-      if (savedCache) {
-        const parsedCache = JSON.parse(savedCache);
-        setUploadCache(parsedCache);
-        console.log('✅ [CACHE DEBUG] Loaded upload cache:', parsedCache);
-        console.log('✅ [CACHE DEBUG] Cache keys:', Object.keys(parsedCache));
-      } else {
-        console.log('📭 [CACHE DEBUG] No cache found in localStorage');
+      const savedPhotoData = sessionStorage.getItem('photoData');
+      if (savedPhotoData) {
+        const photoData = JSON.parse(savedPhotoData);
+        console.log('✅ Loaded photo data from sessionStorage:', photoData);
+        
+        // Set the uploaded image URL if it exists
+        if (photoData.uploadedImageUrl) {
+          setUploadedImageUrl(photoData.uploadedImageUrl);
+        }
+        
+        // Set selected for story if it exists
+        if (photoData.selectedForStory) {
+          setSelectedForStory(photoData.selectedForStory);
+        }
       }
     } catch (error) {
-      console.error('❌ [CACHE DEBUG] Error loading upload cache:', error);
-    } finally {
-      setIsCacheLoaded(true); // Mark cache as loaded regardless of success/failure
-      console.log('🏁 [CACHE DEBUG] Cache loading complete, setting isCacheLoaded=true');
+      console.error('❌ Error loading photo data from sessionStorage:', error);
     }
   }, []);
 
-  // Save upload cache to localStorage whenever it changes
-  useEffect(() => {
+  // Save photo data to sessionStorage
+  const savePhotoDataToSessionStorage = (data: any) => {
     try {
-      localStorage.setItem('photoUploadCache', JSON.stringify(uploadCache));
+      const currentData = sessionStorage.getItem('photoData');
+      const existingData = currentData ? JSON.parse(currentData) : {};
+      const updatedData = { ...existingData, ...data };
+      sessionStorage.setItem('photoData', JSON.stringify(updatedData));
+      console.log('💾 Saved photo data to sessionStorage:', updatedData);
     } catch (error) {
-      console.error('Error saving upload cache:', error);
+      console.error('❌ Error saving photo data to sessionStorage:', error);
     }
-  }, [uploadCache]);
-
-  // Helper function to generate a unique key for the photo
-  const getPhotoKey = (file: File): string => {
-    return `${file.name}_${file.size}_${file.lastModified}`;
   };
 
-  // Helper function to save photo URL to form data localStorage
+  // Helper function to save photo URL to form data sessionStorage
   const savePhotoUrlToFormData = (photoUrl: string) => {
     try {
-      console.log('💾 [FORM DATA] Saving photo URL to form data:', photoUrl);
+      console.log('💾 Saving photo URL to form data:', photoUrl);
       
-      // Get current form data from localStorage
-      const savedFormData = localStorage.getItem('formData');
+      // Get current form data from sessionStorage
+      const savedFormData = sessionStorage.getItem('formData');
       let formData = savedFormData ? JSON.parse(savedFormData) : {};
       
       // Update form data with the uploaded photo URL
       formData.uploadedPhotoUrl = photoUrl;
       formData.photoUploadedAt = new Date().toISOString();
       
-      // Save updated form data back to localStorage
-      localStorage.setItem('formData', JSON.stringify(formData));
+      // Save updated form data back to sessionStorage
+      sessionStorage.setItem('formData', JSON.stringify(formData));
       
-      console.log('✅ [FORM DATA] Photo URL saved to form data successfully');
+      console.log('✅ Photo URL saved to form data successfully');
     } catch (error) {
-      console.error('❌ [FORM DATA] Error saving photo URL to form data:', error);
+      console.error('❌ Error saving photo URL to form data:', error);
     }
   };
 
-  // Centralized upload logic - ONLY uploads if image is NOT in cache
+  // Simplified upload logic - always upload if not already uploaded
   const handlePhotoUpload = async (file: File) => {
-    const photoKey = getPhotoKey(file);
+    console.log('🔄 Uploading photo:', file.name);
     
-    console.log('🔄 [UPLOAD DEBUG] Checking photo:', file.name, 'Key:', photoKey);
-    console.log('🔄 [UPLOAD DEBUG] Current upload cache:', uploadCache);
-    console.log('🔄 [UPLOAD DEBUG] Cache loaded:', isCacheLoaded);
-    console.log('🔄 [UPLOAD DEBUG] Photo details:', {
-      name: file.name,
-      size: file.size,
-      lastModified: file.lastModified,
-      type: file.type
-    });
-    
-    // CRITICAL: Only proceed with upload if image is NOT in cache
-    if (uploadCache[photoKey]) {
-      console.log('✅ [UPLOAD DEBUG] CACHE HIT - Using cached upload for:', file.name, 'URL:', uploadCache[photoKey]);
-      setUploadedImageUrl(uploadCache[photoKey]);
-      // Only update previewUrl if it's not already set (avoid overwriting blob URL)
-      if (!previewUrl || !previewUrl.startsWith('blob:')) {
-        setPreviewUrl(uploadCache[photoKey]);
-      }
-      setIsImageLoading(false);
-      
-      // Save the cached photo URL to form data localStorage
-      savePhotoUrlToFormData(uploadCache[photoKey]);
-      
-      // No toast message for cache hits - they happen on every refresh
-      return; // EXIT - No upload needed
+    // If already uploaded, don't upload again
+    if (uploadedImageUrl) {
+      console.log('✅ Photo already uploaded, skipping upload');
+      return;
     }
-
-    // ONLY reach here if image is NOT in cache (new upload)
-    console.log('❌ [UPLOAD DEBUG] CACHE MISS - Uploading NEW photo to S3:', file.name);
-    console.log('❌ [UPLOAD DEBUG] Cache keys available:', Object.keys(uploadCache));
-    console.log('❌ [UPLOAD DEBUG] Looking for key:', photoKey);
     
     try {
       setIsUploading(true);
-      setUploadProgress('🔄 Uploading new image to cloud...');
+      setUploadProgress('🔄 Uploading image to cloud...');
       
-      console.log('🚀 [UPLOAD DEBUG] About to call uploadImageToS3 - THIS WILL CALL generate-url');
       const result = await uploadImageToS3(file);
-      console.log('🚀 [UPLOAD DEBUG] uploadImageToS3 result:', result);
+      console.log('🚀 Upload result:', result);
       
       if (result.success && result.imageUrl) {
-        console.log('✅ [UPLOAD DEBUG] Upload successful, caching result:', result.imageUrl);
-        
-        // Cache the result for future use
-        setUploadCache(prev => ({
-          ...prev,
-          [photoKey]: result.imageUrl
-        }));
+        console.log('✅ Upload successful:', result.imageUrl);
         
         setUploadedImageUrl(result.imageUrl);
         setPreviewUrl(result.imageUrl);
         setUploadProgress('✅ Upload completed!');
-        toast.success('🎉 New photo uploaded successfully!');
+        toast.success('🎉 Photo uploaded successfully!');
         
-        // Save the uploaded photo URL to form data localStorage
+        // Save the uploaded photo URL to form data
         savePhotoUrlToFormData(result.imageUrl);
+        
+        // Save photo data to sessionStorage
+        savePhotoDataToSessionStorage({
+          uploadedImageUrl: result.imageUrl,
+          selectedForStory: selectedForStory
+        });
         
         setTimeout(() => {
           setUploadProgress('');
@@ -179,47 +151,27 @@ const PhotoUploadField: React.FC<PhotoUploadFieldProps> = ({
         throw new Error(result.error || 'Upload failed');
       }
     } catch (error) {
-      console.error('❌ [UPLOAD DEBUG] Upload error:', error);
+      console.error('❌ Upload error:', error);
       toast.error(error instanceof Error ? error.message : 'Upload failed');
       setUploadProgress('');
       setIsUploading(false);
     }
   };
 
-  // Handle photo selection and preview - triggers upload check
+  // Handle photo selection and preview
   useEffect(() => {
     let objectUrl: string | null = null;
     
-    console.log('🔍 [EFFECT DEBUG] PhotoUploadField useEffect triggered');
-    console.log('📊 [EFFECT DEBUG] Current state:', { 
+    console.log('🔍 PhotoUploadField useEffect triggered');
+    console.log('📊 Current state:', { 
       hasPhoto: !!photo, 
       photoName: photo?.name,
-      photoSize: photo?.size,
-      photoLastModified: photo?.lastModified,
-      uploadCacheKeys: Object.keys(uploadCache),
-      isCacheLoaded,
-      processedPhotoKey
+      uploadedImageUrl,
+      selectedForStory
     });
     
-    // CRITICAL: Only proceed if cache is loaded to prevent race conditions
-    if (!isCacheLoaded) {
-      console.log('⏳ [EFFECT DEBUG] Cache not loaded yet, skipping upload check');
-      return;
-    }
-    
     if (photo) {
-      console.log('📸 [EFFECT DEBUG] Photo exists in props:', photo.name);
-      
-      // Generate photo key to check if we've already processed this photo
-      const currentPhotoKey = getPhotoKey(photo);
-      console.log('🔑 [EFFECT DEBUG] Current photo key:', currentPhotoKey);
-      console.log('🏷️ [EFFECT DEBUG] Last processed key:', processedPhotoKey);
-      
-      // PREVENT DUPLICATE PROCESSING: Skip if we've already processed this exact photo
-      if (processedPhotoKey === currentPhotoKey) {
-        console.log('🔄 [EFFECT DEBUG] Photo already processed, skipping upload check');
-        return;
-      }
+      console.log('📸 Photo exists in props:', photo.name);
       
       setIsImageLoading(true);
       
@@ -228,22 +180,11 @@ const PhotoUploadField: React.FC<PhotoUploadFieldProps> = ({
       setPreviewUrl(objectUrl);
       setIsImageLoading(false);
       
-      // ADDITIONAL SAFEGUARD: Check cache BEFORE marking as processed
-      // This prevents uploads for photos that are already cached
-      if (uploadCache[currentPhotoKey]) {
-        console.log('✅ [EFFECT DEBUG] Photo found in cache, skipping upload entirely');
-        setUploadedImageUrl(uploadCache[currentPhotoKey]);
-        setProcessedPhotoKey(currentPhotoKey);
-        return;
+      // Upload if not already uploaded
+      if (!uploadedImageUrl) {
+        console.log('🎯 Starting photo upload...');
+        handlePhotoUpload(photo);
       }
-      
-      // Mark this photo as processed BEFORE calling handlePhotoUpload
-      setProcessedPhotoKey(currentPhotoKey);
-      
-      // Check cache and upload if needed
-      console.log('🎯 [EFFECT DEBUG] About to call handlePhotoUpload from useEffect');
-      console.log('🎯 [EFFECT DEBUG] This will check cache and potentially trigger S3 upload');
-      handlePhotoUpload(photo);
       
       // Set a timeout to revoke the blob URL to prevent memory leaks
       const timeoutId = setTimeout(() => {
@@ -259,38 +200,43 @@ const PhotoUploadField: React.FC<PhotoUploadFieldProps> = ({
         }
       };
     } else {
-      console.log('🗑️ [EFFECT DEBUG] No photo selected, clearing state');
+      console.log('🗑️ No photo selected, clearing state');
       setPreviewUrl(null);
       setIsImageLoading(false);
       setUploadedImageUrl(null);
-      setProcessedPhotoKey(null); // Clear processed photo key
+      setSelectedForStory(null);
+      
+      // Clear photo data from sessionStorage
+      sessionStorage.removeItem('photoData');
     }
-  }, [photo, isCacheLoaded]); // Remove uploadCache from dependencies to prevent infinite loop
-
-
+  }, [photo]); // Only depend on photo changes
 
   const handleRemoveClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
     setUploadedImageUrl(null);
+    setPreviewUrl(null);
     setUploadProgress('');
     setIsUploading(false);
     setSelectedForStory(null);
     
-    // Clear uploaded photo URL from form data localStorage
+    // Clear uploaded photo URL from form data sessionStorage
     try {
-      const savedFormData = localStorage.getItem('formData');
+      const savedFormData = sessionStorage.getItem('formData');
       if (savedFormData) {
         const formData = JSON.parse(savedFormData);
         delete formData.uploadedPhotoUrl;
         delete formData.photoUploadedAt;
-        localStorage.setItem('formData', JSON.stringify(formData));
-        console.log('🗑️ [FORM DATA] Uploaded photo URL cleared from form data');
+        sessionStorage.setItem('formData', JSON.stringify(formData));
+        console.log('🗑️ Uploaded photo URL cleared from form data');
       }
     } catch (error) {
-      console.error('❌ [FORM DATA] Error clearing uploaded photo URL:', error);
+      console.error('❌ Error clearing uploaded photo URL:', error);
     }
+    
+    // Clear photo data from sessionStorage
+    sessionStorage.removeItem('photoData');
     
     onPhotoRemove();
   };
@@ -310,8 +256,14 @@ const PhotoUploadField: React.FC<PhotoUploadFieldProps> = ({
       onPhotoChosenForStory(cartoonUrl, true);
     }
     
-    // Save the cartoon URL as the uploaded photo URL in form data localStorage
+    // Save the cartoon URL as the uploaded photo URL in form data
     savePhotoUrlToFormData(cartoonUrl);
+    
+    // Save photo data to sessionStorage
+    savePhotoDataToSessionStorage({
+      uploadedImageUrl: cartoonUrl,
+      selectedForStory: 'cartoon'
+    });
   };
 
   const handleCartoonRemove = () => {
@@ -319,19 +271,24 @@ const PhotoUploadField: React.FC<PhotoUploadFieldProps> = ({
       onCartoonRemove();
     }
     
-    // Clear uploaded photo URL from form data localStorage when cartoon is removed
+    // Clear uploaded photo URL from form data sessionStorage when cartoon is removed
     try {
-      const savedFormData = localStorage.getItem('formData');
+      const savedFormData = sessionStorage.getItem('formData');
       if (savedFormData) {
         const formData = JSON.parse(savedFormData);
         delete formData.uploadedPhotoUrl;
         delete formData.photoUploadedAt;
-        localStorage.setItem('formData', JSON.stringify(formData));
-        console.log('🗑️ [FORM DATA] Uploaded photo URL cleared when cartoon removed');
+        sessionStorage.setItem('formData', JSON.stringify(formData));
+        console.log('🗑️ Uploaded photo URL cleared when cartoon removed');
       }
     } catch (error) {
-      console.error('❌ [FORM DATA] Error clearing uploaded photo URL:', error);
+      console.error('❌ Error clearing uploaded photo URL:', error);
     }
+    
+    // Update photo data in sessionStorage
+    savePhotoDataToSessionStorage({
+      selectedForStory: null
+    });
   };
 
   const renderContent = () => {
@@ -401,8 +358,13 @@ const PhotoUploadField: React.FC<PhotoUploadFieldProps> = ({
                          if (onPhotoChosenForStory && previewUrl) {
                            onPhotoChosenForStory(previewUrl, false);
                            toast.success('🎉 Original photo selected for story!');
-                           // Save the original photo URL to form data localStorage
+                           // Save the original photo URL to form data
                            savePhotoUrlToFormData(previewUrl);
+                           
+                           // Save photo data to sessionStorage
+                           savePhotoDataToSessionStorage({
+                             selectedForStory: 'original'
+                           });
                          }
                        }}
                        className={`w-full mt-3 rounded-xl py-2 text-sm font-medium transition-all duration-300 ${
@@ -447,8 +409,13 @@ const PhotoUploadField: React.FC<PhotoUploadFieldProps> = ({
                          if (onPhotoChosenForStory && cartoonImageUrl) {
                            onPhotoChosenForStory(cartoonImageUrl, true);
                            toast.success('🎉 Cartoon photo selected for story!');
-                           // Save the cartoon photo URL to form data localStorage
+                           // Save the cartoon photo URL to form data
                            savePhotoUrlToFormData(cartoonImageUrl);
+                           
+                           // Save photo data to sessionStorage
+                           savePhotoDataToSessionStorage({
+                             selectedForStory: 'cartoon'
+                           });
                          }
                        }}
                        className={`w-full mt-3 rounded-xl py-2 text-sm font-medium transition-all duration-300 ${
@@ -554,8 +521,13 @@ const PhotoUploadField: React.FC<PhotoUploadFieldProps> = ({
                         setSelectedForStory('original');
                         if (onPhotoChosenForStory && previewUrl) {
                           onPhotoChosenForStory(previewUrl, false);
-                          // Save the original photo URL to form data localStorage
+                          // Save the original photo URL to form data
                           savePhotoUrlToFormData(previewUrl);
+                          
+                          // Save photo data to sessionStorage
+                          savePhotoDataToSessionStorage({
+                            selectedForStory: 'original'
+                          });
                         }
                       }}
                       className="bg-blue-500 hover:bg-blue-600 text-white rounded-xl py-2 px-6 text-sm font-medium"

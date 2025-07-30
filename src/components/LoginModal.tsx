@@ -21,12 +21,24 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onOpenChange, onLoginSu
       // When the 'login_success' item is set in another tab,
       // it means the OAuth flow was successful.
       if (event.key === 'login_success' && event.newValue) {
+        console.log('🔄 LoginModal: Storage event detected, OAuth login successful');
         toast.success('🎉 Login successful!');
         onLoginSuccess(); // This will close the modal
         // Clean up the storage item
         localStorage.removeItem('login_success');
       }
     };
+
+    // Also check for login success periodically (for Safari compatibility)
+    const checkLoginSuccess = setInterval(() => {
+      const loginSuccess = localStorage.getItem('login_success');
+      if (loginSuccess && isOpen) {
+        console.log('🔄 LoginModal: Periodic check detected OAuth login success');
+        localStorage.removeItem('login_success');
+        toast.success('🎉 Login successful!');
+        onLoginSuccess();
+      }
+    }, 1000);
 
     // Only listen for changes when the modal is open
     if (isOpen) {
@@ -35,6 +47,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onOpenChange, onLoginSu
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      clearInterval(checkLoginSuccess);
     };
   }, [isOpen, onLoginSuccess]);
 

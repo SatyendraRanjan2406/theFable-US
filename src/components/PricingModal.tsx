@@ -175,6 +175,11 @@ const PricingModal: React.FC<PricingModalProps> = ({
       setPaymentVerifiedWithLog(true, 'Stripe payment verified successfully');
       onPaymentSuccess();
       
+      // Dispatch custom payment success event for ComicBook component
+      window.dispatchEvent(new CustomEvent('payment-success', {
+        detail: { sessionId, orderId: verificationResult.order_id }
+      }));
+      
       // Close the modal
       onClose();
       
@@ -509,6 +514,15 @@ const updatePaymentStatus = async (orderId: string, status: string) => {
               if (shouldProceed) {
                 console.log('✅ Calling onPaymentSuccess - payment verified and not cancelled/failed/dismissed');
                 onPaymentSuccess();
+                
+                // Dispatch custom payment success event for ComicBook component
+                window.dispatchEvent(new CustomEvent('payment-success', {
+                  detail: { 
+                    orderId: orderDetails.razorpay_order_id,
+                    paymentId: response.razorpay_payment_id 
+                  }
+                }));
+                
                 onClose();
               } else {
                 console.log('❌ Skipping onPaymentSuccess - payment was cancelled, failed, or modal dismissed');

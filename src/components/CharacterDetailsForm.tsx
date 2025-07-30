@@ -50,15 +50,15 @@ const CharacterDetailsForm: React.FC<CharacterDetailsFormProps> = ({
     onInputChange('characterAge', value);
   };
 
-  const testLocalStorage = () => {
-    const savedData = localStorage.getItem('formData');
+  const testSessionStorage = () => {
+    const savedData = sessionStorage.getItem('formData');
     if (savedData) {
       const parsed = JSON.parse(savedData);
-      console.log('🔍 Current localStorage formData:', parsed);
-      toast.success(`LocalStorage test: characterName = "${parsed.characterName}"`);
+      console.log('🔍 Current sessionStorage formData:', parsed);
+      toast.success(`SessionStorage test: characterName = "${parsed.characterName}"`);
     } else {
-      console.log('🔍 No formData in localStorage');
-      toast.error('No formData found in localStorage');
+      console.log('🔍 No formData in sessionStorage');
+      toast.error('No formData found in sessionStorage');
     }
   };
 

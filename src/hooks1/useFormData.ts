@@ -3,81 +3,53 @@ import { toast } from 'sonner';
 import { compressImageForAPI } from '@/utils/imageUtils';
 import { trackPhotoUploaded } from '@/utils/gtm';
 
-// Helper to convert base64 string back to a File object
-const base64StringToFile = (base64String: string, filename: string, originalLastModified?: number) => {
-  const arr = base64String.split(',');
-  const mime = arr[0].match(/:(.*?);/)?.[1];
-  const bstr = atob(arr[1]);
-  let n = bstr.length;
-  const u8arr = new Uint8Array(n);
-  while (n--) {
-    u8arr[n] = bstr.charCodeAt(n);
-  }
-  return new File([u8arr], filename, { 
-    type: mime,
-    lastModified: originalLastModified || Date.now()
-  });
-};
-
-// Helper to convert a File to a base64 string
-const fileToBase64String = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-};
-
 export const useFormData = () => {
   // Move these inside the hook to ensure they are always in scope
   const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
   const HF_API_KEY = import.meta.env.VITE_HF_API_KEY;
 
   const [formData, setFormData] = useState(() => {
-    const savedData = localStorage.getItem('formData');
-    console.log('🔄 Loading form data from localStorage:', savedData ? 'Found' : 'Not found');
+    const savedData = sessionStorage.getItem('formData');
+    console.log('🔄 Loading form data from sessionStorage:', savedData ? 'Found' : 'Not found');
     
     const initialData = {
-    characterName: '',
-    characterAge: '',
-    characterGender: '',
-    photo: null as File | null,
-    genre: 'adventure',
-    storyStyle: 'default',
-    bookType: 'comic',
-    message: '',
-    storyLength: [3] as number[],
-    storyOutline: '',
-    cartoonImageUrl: null as string | null,
-    selectedPhotoForStory: null as string | null, // URL of selected photo for story
-    isCartoonSelectedForStory: false, // Whether cartoon is selected for story
-    uploadedPhotoUrl: null as string | null, // S3 uploaded photo URL
-    photoUploadedAt: null as string | null // Timestamp when photo was uploaded
+      characterName: '',
+      characterAge: '',
+      characterGender: '',
+      photo: null as File | null,
+      genre: 'adventure',
+      storyStyle: 'default',
+      bookType: 'comic',
+      message: '',
+      storyLength: [3] as number[],
+      storyOutline: '',
+      cartoonImageUrl: null as string | null,
+      selectedPhotoForStory: null as string | null, // URL of selected photo for story
+      isCartoonSelectedForStory: false, // Whether cartoon is selected for story
+      uploadedPhotoUrl: null as string | null, // S3 uploaded photo URL
+      photoUploadedAt: null as string | null // Timestamp when photo was uploaded
     };
 
     if (savedData) {
       const parsedData = JSON.parse(savedData);
-      console.log('📖 Parsed localStorage data:', {
+      console.log('📖 Parsed sessionStorage data:', {
         characterName: parsedData.characterName,
         characterAge: parsedData.characterAge,
         characterGender: parsedData.characterGender,
         selectedPhotoForStory: parsedData.selectedPhotoForStory,
-        isCartoonSelectedForStory: parsedData.isCartoonSelectedForStory
+        isCartoonSelectedForStory: parsedData.isCartoonSelectedForStory,
+        uploadedPhotoUrl: parsedData.uploadedPhotoUrl,
+        photoUploadedAt: parsedData.photoUploadedAt
       });
       
-      if (parsedData.photo) {
-        // Restore the File object with original metadata to maintain cache consistency
-        initialData.photo = base64StringToFile(
-          parsedData.photo, 
-          parsedData.photoName || 'character.jpg',
-          parsedData.photoLastModified
-        );
-      }
+      // Note: We don't restore the File object from sessionStorage
+      // The photo will be re-selected by the user if needed
+      // This simplifies the storage and avoids base64 conversion issues
+      
       const finalData = { 
         ...initialData, 
         ...parsedData, 
-        photo: initialData.photo,
+        photo: null, // Always start with null photo - user will re-select if needed
         selectedPhotoForStory: parsedData.selectedPhotoForStory || null,
         isCartoonSelectedForStory: parsedData.isCartoonSelectedForStory || false,
         uploadedPhotoUrl: parsedData.uploadedPhotoUrl || null,
@@ -94,7 +66,7 @@ export const useFormData = () => {
       });
       return finalData;
     }
-    console.log('📝 Using default form data (no localStorage)');
+    console.log('📝 Using default form data (no sessionStorage)');
     return initialData;
   });
 
@@ -144,8 +116,8 @@ export const useFormData = () => {
     const file = event.target.files?.[0];
     if (!file) {
       setFormData(prev => ({ ...prev, photo: null }));
-        return;
-      }
+      return;
+    }
 
     // If file is small, set it immediately.
     if (file.size <= 2 * 1024 * 1024) { // 2MB threshold
@@ -184,16 +156,24 @@ export const useFormData = () => {
       uploadedPhotoUrl: null,
       photoUploadedAt: null
     }));
-    const savedData = JSON.parse(localStorage.getItem('formData') || '{}');
-    delete savedData.photo;
-    delete savedData.photoName;
-    delete savedData.photoLastModified;
-    delete savedData.cartoonImageUrl;
-    delete savedData.selectedPhotoForStory;
-    delete savedData.isCartoonSelectedForStory;
-    delete savedData.uploadedPhotoUrl;
-    delete savedData.photoUploadedAt;
-    localStorage.setItem('formData', JSON.stringify(savedData));
+    
+    // Clear photo-related data from sessionStorage
+    try {
+      const savedData = sessionStorage.getItem('formData');
+      if (savedData) {
+        const formData = JSON.parse(savedData);
+        delete formData.uploadedPhotoUrl;
+        delete formData.photoUploadedAt;
+        delete formData.cartoonImageUrl;
+        delete formData.selectedPhotoForStory;
+        delete formData.isCartoonSelectedForStory;
+        sessionStorage.setItem('formData', JSON.stringify(formData));
+        console.log('🗑️ Photo data cleared from sessionStorage');
+      }
+    } catch (error) {
+      console.error('❌ Error clearing photo data from sessionStorage:', error);
+    }
+    
     toast.success('Photo removed.');
   };
 
@@ -239,13 +219,14 @@ export const useFormData = () => {
       uploadedPhotoUrl: null,
       photoUploadedAt: null
     });
-    localStorage.removeItem('formData');
+    sessionStorage.removeItem('formData');
+    sessionStorage.removeItem('photoData');
   };
 
-  // Effect to save data to localStorage
+  // Effect to save data to sessionStorage (simplified - no photo base64 conversion)
   useEffect(() => {
-    const saveData = async () => {
-      console.log('💾 Saving form data to localStorage:', {
+    const saveData = () => {
+      console.log('💾 Saving form data to sessionStorage:', {
         characterName: formData.characterName,
         characterAge: formData.characterAge,
         characterGender: formData.characterGender,
@@ -256,25 +237,14 @@ export const useFormData = () => {
         photoUploadedAt: formData.photoUploadedAt
       });
       
-      if (formData.photo) {
-        const photoBase64 = await fileToBase64String(formData.photo);
-        const dataToSave = {
-          ...formData,
-          photo: photoBase64,
-          photoName: formData.photo.name,
-          photoLastModified: formData.photo.lastModified // Save lastModified
-        };
-        localStorage.setItem('formData', JSON.stringify(dataToSave));
-        console.log('✅ Form data saved with photo');
-      } else {
-        // Don't save photo-related fields if there is no photo
-        const { photo, ...rest } = formData;
-        localStorage.setItem('formData', JSON.stringify(rest));
-        console.log('✅ Form data saved without photo');
-      }
+      // Save form data without the photo File object
+      // The photo File object is not serializable, so we exclude it
+      const { photo, ...dataToSave } = formData;
+      sessionStorage.setItem('formData', JSON.stringify(dataToSave));
+      console.log('✅ Form data saved to sessionStorage');
       
       // Verify the save by reading it back
-      const savedData = localStorage.getItem('formData');
+      const savedData = sessionStorage.getItem('formData');
       if (savedData) {
         const parsed = JSON.parse(savedData);
         console.log('🔍 Verification - Saved characterName:', parsed.characterName);
