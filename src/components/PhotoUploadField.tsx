@@ -55,6 +55,14 @@ const PhotoUploadField: React.FC<PhotoUploadFieldProps> = ({
     console.log('🔄 Loading photo data from sessionStorage...');
     try {
       const savedPhotoData = sessionStorage.getItem('photoData');
+      const savedFormData = sessionStorage.getItem('formData');
+      
+      console.log('🔍 Raw sessionStorage data:', {
+        photoData: savedPhotoData,
+        formData: savedFormData
+      });
+      
+      // Priority 1: Load from photoData (most reliable for photo persistence)
       if (savedPhotoData) {
         const photoData = JSON.parse(savedPhotoData);
         console.log('✅ Loaded photo data from sessionStorage:', photoData);
@@ -62,11 +70,35 @@ const PhotoUploadField: React.FC<PhotoUploadFieldProps> = ({
         // Set the uploaded image URL if it exists
         if (photoData.uploadedImageUrl) {
           setUploadedImageUrl(photoData.uploadedImageUrl);
+          setPreviewUrl(photoData.uploadedImageUrl);
+          console.log('📸 Set preview URL from photoData.uploadedImageUrl:', photoData.uploadedImageUrl);
         }
         
         // Set selected for story if it exists
         if (photoData.selectedForStory) {
           setSelectedForStory(photoData.selectedForStory);
+          console.log('📸 Set selected for story from photoData:', photoData.selectedForStory);
+        }
+      }
+      
+      // Priority 2: Fallback to form data if no photoData or no uploadedImageUrl
+      if (savedFormData && (!savedPhotoData || !JSON.parse(savedPhotoData || '{}').uploadedImageUrl)) {
+        const formData = JSON.parse(savedFormData);
+        console.log('✅ Loaded form data from sessionStorage:', {
+          selectedPhotoForStory: formData.selectedPhotoForStory,
+          uploadedPhotoUrl: formData.uploadedPhotoUrl
+        });
+        
+        // If we have a selected photo for story, set it as preview
+        if (formData.selectedPhotoForStory) {
+          setPreviewUrl(formData.selectedPhotoForStory);
+          setSelectedForStory(formData.isCartoonSelectedForStory ? 'cartoon' : 'original');
+          console.log('📸 Set preview URL from formData.selectedPhotoForStory:', formData.selectedPhotoForStory);
+        } else if (formData.uploadedPhotoUrl) {
+          // Fallback to uploaded photo URL
+          setPreviewUrl(formData.uploadedPhotoUrl);
+          setUploadedImageUrl(formData.uploadedPhotoUrl);
+          console.log('📸 Set preview URL from formData.uploadedPhotoUrl:', formData.uploadedPhotoUrl);
         }
       }
     } catch (error) {

@@ -10,6 +10,7 @@ import { fileToBase64 } from '@/utils/imageUtils';
 import { useNavigate } from "react-router-dom";
 import { trackCheckoutStarted, trackDownloadPDFButtonClicked } from '@/utils/gtm';
 import { parseStoryToPanels } from '@/utils/storyParser';
+import { urlToBase64 } from '@/utils/imageUtils';
 
 interface ComicBookProps {
   story: string;
@@ -176,24 +177,6 @@ const ComicBook: React.FC<ComicBookProps> = ({
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
   const [isDownloadingImages, setIsDownloadingImages] = useState(false);
 
-  // Listen for payment success events
-  useEffect(() => {
-    const handlePaymentSuccessEvent = () => {
-      console.log('🎨 ComicBook: Payment success event received');
-      handlePaymentSuccess();
-    };
-
-    // Listen for custom payment success events
-    window.addEventListener('payment-success', handlePaymentSuccessEvent);
-    
-    // Also listen for Stripe payment success events
-    window.addEventListener('stripe-payment-success', handlePaymentSuccessEvent);
-
-    return () => {
-      window.removeEventListener('payment-success', handlePaymentSuccessEvent);
-      window.removeEventListener('stripe-payment-success', handlePaymentSuccessEvent);
-    };
-  }, [handlePaymentSuccess]);
 
   const handlePaymentSuccess = useCallback(async () => {
     console.log('🎨 ComicBook handlePaymentSuccess called');
@@ -221,12 +204,27 @@ const ComicBook: React.FC<ComicBookProps> = ({
     }
   }, [onGenerateLockedImages, isGeneratingLockedImages]);
 
-  // Utility functions (same as StoryActions)
-  async function urlToFile(url: string, filename: string) {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    return new File([blob], filename, { type: blob.type });
-  }
+  // Listen for payment success events
+  useEffect(() => {
+    const handlePaymentSuccessEvent = () => {
+      console.log('🎨 ComicBook: Payment success event received');
+      handlePaymentSuccess();
+    };
+
+    // Listen for custom payment success events
+    window.addEventListener('payment-success', handlePaymentSuccessEvent);
+    
+    // Also listen for Stripe payment success events
+    window.addEventListener('stripe-payment-success', handlePaymentSuccessEvent);
+
+    return () => {
+      window.removeEventListener('payment-success', handlePaymentSuccessEvent);
+      window.removeEventListener('stripe-payment-success', handlePaymentSuccessEvent);
+    };
+  }, [handlePaymentSuccess]);
+
+
+
 
   // Check if payment has been made (no locked panels beyond the first 2 free ones)
   const isPaymentComplete = () => {
@@ -236,12 +234,12 @@ const ComicBook: React.FC<ComicBookProps> = ({
   };
 
   const handleDownloadPDF = async (downloadViewMode?: 'grid' | 'split' | 'fullscreen') => {
-    // Check payment status first
-    if (!isPaymentComplete()) {
-      onUnlockRequest?.();
-      trackCheckoutStarted('unlock_now_generate_pdf_button', 49);
-      return;
-    }
+    // // Check payment status first
+    // if (!isPaymentComplete()) {
+    //   onUnlockRequest?.();
+    //   trackCheckoutStarted('unlock_now_generate_pdf_button', 49);
+    //   return;
+    // }
     // If this is a curated story, use the curated download handler
     if (isCuratedStory && onCuratedDownloadPDF) {
       console.log('🔍 Using curated story PDF download handler');
@@ -302,17 +300,17 @@ const ComicBook: React.FC<ComicBookProps> = ({
         return;
         }
       }
-
+      debugger
       // Download and convert each image to base64
       const base64Images = await Promise.all(
         images.map(async (url, idx) => {
           if (!url) return null;
           try {
             console.log(`Processing image ${idx + 1} for PDF:`, url.includes('storymaker-jcool.s3.amazonaws.com') ? 'Using presigned URL' : 'Using original URL');
-            const file = await urlToFile(url, `panel${idx + 1}.jpg`);
-            return await fileToBase64(file);
+            return await urlToBase64(url);
           } catch (e) {
             console.error(`Failed to process image ${idx + 1}:`, e);
+            console.log(`Image URL that failed: ${url}`);
             return null;
           }
         })
@@ -328,6 +326,7 @@ const ComicBook: React.FC<ComicBookProps> = ({
         title
       });
       const storyPanels = parseStoryToPanels(story);
+      debugger
       // Generate PDF with specified view mode using the raw story (same as StoryActions)
       const pdf = await generateComicPDF(
         storyPanels, // Use raw story like StoryActions does

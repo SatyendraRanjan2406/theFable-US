@@ -17,8 +17,7 @@ import { clearVisualContinuityCache } from '@/utils/imageGeneration';
 import ErrorState from '@/components/story-preview/ErrorState';
 import PricingModal from '@/components/PricingModal';
 import { toast } from 'sonner';
-import { fileToBase64 } from '@/utils/imageUtils';
-import { getSelectedCharacterImageBase64 } from '@/utils/imageUtils';
+import { fileToBase64, getSelectedCharacterImageBase64, urlToBase64 } from '@/utils/imageUtils';
 import { generateMinimaxImage } from '@/utils/imageGeneration/apiClients';
 import { generatePanelImage } from '@/utils/storyApi';
 import NavigationBar from '@/components/NavigationBar';
@@ -60,6 +59,36 @@ interface IndexProps {
 }
 
 const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
+  // Helper function to get character photo from sessionStorage
+  const getCharacterPhotoFromSessionStorage = () => {
+    try {
+      // First try to get from photoData
+      const savedPhotoData = sessionStorage.getItem('photoData');
+      if (savedPhotoData) {
+        const photoData = JSON.parse(savedPhotoData);
+        if (photoData.uploadedImageUrl) {
+          return photoData.uploadedImageUrl;
+        }
+      }
+      
+      // Fallback to formData
+      const savedFormData = sessionStorage.getItem('formData');
+      if (savedFormData) {
+        const formData = JSON.parse(savedFormData);
+        if (formData.selectedPhotoForStory) {
+          return formData.selectedPhotoForStory;
+        }
+        if (formData.uploadedPhotoUrl) {
+          return formData.uploadedPhotoUrl;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('❌ Error getting character photo from sessionStorage:', error);
+      return null;
+    }
+  };
   console.log('🏠 Index component rendered');
   
   // 1. All state and ref hooks at the top
@@ -1111,7 +1140,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
       setIsGeneratingImages(false);
       return;
     }
-    
+    debugger
     if (!panelsData || panelsData.length === 0) {
       toast.error("Cannot generate locked images without panel data.");
       setIsCreatingMagic(false);
@@ -1220,8 +1249,19 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
           
           try {
             // Get character image base64 for subject reference
-            const characterImageBase64 = formData.photo ? await fileToBase64(formData.photo) : undefined;
-            const characterImageType = formData.photo?.type;
+            let characterImageBase64: string | undefined;
+            let characterImageType: string | undefined;
+            
+            // Handle both create case (formData.photo is File) and edit case (exising_photo_url is URL)
+            if (formData.photo) {
+              // Create case: user uploaded a new photo
+              characterImageBase64 = await fileToBase64(formData.photo);
+              characterImageType = formData.photo.type;
+            } else if (exising_photo_url) {
+              // Edit case: character image from API response
+              characterImageBase64 = await urlToBase64(exising_photo_url);
+              characterImageType = 'image/jpeg'; // Default type for URL images
+            }
             
             const result = await generatePanelImage(panel.id, "16:9", 1, panel.panel_text, panel.panel_number, characterImageBase64, characterImageType);
             
@@ -1418,8 +1458,19 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
         const panelText = panelsData?.[panelIndex]?.panel_text;
         
         // Get character image base64 for subject reference
-        const characterImageBase64 = formData.photo ? await fileToBase64(formData.photo) : undefined;
-        const characterImageType = formData.photo?.type;
+        let characterImageBase64: string | undefined;
+        let characterImageType: string | undefined;
+        
+        // Handle both create case (formData.photo is File) and edit case (exising_photo_url is URL)
+        if (formData.photo) {
+          // Create case: user uploaded a new photo
+          characterImageBase64 = await fileToBase64(formData.photo);
+          characterImageType = formData.photo.type;
+        } else if (exising_photo_url) {
+          // Edit case: character image from API response
+          characterImageBase64 = await urlToBase64(exising_photo_url);
+          characterImageType = 'image/jpeg'; // Default type for URL images
+        }
         
         // Get panel number from panels data
         const panelNumber = panelsData?.[panelIndex]?.panel_number;
@@ -1688,7 +1739,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     content = (
       <CuratedStoryGenerationProgress
         characterName={formData.characterName}
-        characterPhotoUrl={formData.photo ? URL.createObjectURL(formData.photo) : null}
+        characterPhotoUrl={getCharacterPhotoFromSessionStorage() || formData.selectedPhotoForStory || (formData.photo ? URL.createObjectURL(formData.photo) : null)}
         selectedPhotoForStory={formData.selectedPhotoForStory}
         isCartoonSelectedForStory={formData.isCartoonSelectedForStory}
         onBackToForm={() => {
@@ -1719,7 +1770,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
         <FinalCuratedPreview
           curatedStoryResult={curatedStoryResult}
           characterName={formData.characterName}
-          characterPhoto={formData.selectedPhotoForStory || (formData.photo ? URL.createObjectURL(formData.photo) : null)}
+          characterPhoto={getCharacterPhotoFromSessionStorage() || formData.selectedPhotoForStory || (formData.photo ? URL.createObjectURL(formData.photo) : null)}
           showBackButton={true}
           onBackToForm={handleBackToHome}
           onBackToCuratedForm={() => {
@@ -1828,7 +1879,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
         loadingCount={currentlyGenerating}
         onBackToForm={handleBackToForm}
         generationTarget={targetGeneration}
-        characterPhotoUrl={formData.photo ? URL.createObjectURL(formData.photo) : null}
+        characterPhotoUrl={formData.selectedPhotoForStory || (formData.photo ? URL.createObjectURL(formData.photo) : null)}
         selectedPhotoForStory={formData.selectedPhotoForStory}
         isCartoonSelectedForStory={formData.isCartoonSelectedForStory}
         error={Object.keys(imageGenerationErrors).length > 0}
@@ -1885,7 +1936,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
       <StoryPreview 
         story={storybookText || generatedStory}
         characterName={formData.characterName}
-        characterPhoto= { isEditMode ? exising_photo_url : (formData.photo ? URL.createObjectURL(formData.photo) : null)}
+        characterPhoto= { isEditMode ? exising_photo_url : (formData.selectedPhotoForStory || (formData.photo ? URL.createObjectURL(formData.photo) : null))}
         genre={formData.genre}
         isGenerating={isGeneratingStory || isGeneratingImages}
         isRegenerating={isRegeneratingStory}

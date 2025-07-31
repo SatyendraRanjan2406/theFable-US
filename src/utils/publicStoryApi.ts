@@ -98,7 +98,7 @@ export const generatePublicPanelImage = async (
 ): Promise<PublicImageGenerationResponse> => {
   try {
     console.log('🎨 Generating public panel image:', { storyId, panelId, imageData });
-    
+    debugger
     const response = await fetch(`${BASE_URL}/api/auth/panels/${panelId}/generate-image/`, {
       method: 'POST',
       headers: {

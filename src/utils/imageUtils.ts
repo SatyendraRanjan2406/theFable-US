@@ -72,6 +72,7 @@ export const createCircularCrop = (imageElement: HTMLImageElement): Promise<Blob
 };
 
 export function fileToBase64(file: File): Promise<string> {
+  debugger
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -230,11 +231,26 @@ export const compressImageForBase64API = (file: File, maxSizeKB: number = 100): 
   });
 };
 
-// Convert image URL to base64 string
+// Convert image URL to base64 string with proper CORS handling
 export const urlToBase64 = async (url: string): Promise<string> => {
   try {
-    const response = await fetch(url);
+    console.log(`🔄 Fetching image from URL: ${url.substring(0, 100)}...`);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'Accept': 'image/*',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
     const blob = await response.blob();
+    console.log(`✅ Successfully fetched image (${blob.size} bytes)`);
+    
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => {
@@ -245,7 +261,7 @@ export const urlToBase64 = async (url: string): Promise<string> => {
       reader.readAsDataURL(blob);
     });
   } catch (error) {
-    console.error('Error converting URL to base64:', error);
+    console.error(`❌ Error converting URL to base64: ${url}`, error);
     throw error;
   }
 };

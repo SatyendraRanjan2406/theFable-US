@@ -511,7 +511,7 @@ export const generatePanelImage = async (
     if (panelNumber !== undefined) {
       requestBody.panel_number = panelNumber;
     }
-
+    debugger
     // Add subject_reference if character image is provided
     if (characterImageBase64) {
       // Determine the data URL prefix based on the file type

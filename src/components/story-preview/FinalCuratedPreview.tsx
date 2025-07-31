@@ -325,10 +325,10 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
   // New PDF download function for FinalCuratedPreview
   const handleDownloadPDF = async (viewMode: 'grid' | 'split') => {
     // Check payment status
-    if (!localIsPaid) {
-      onUnlockRequest?.();
-      return;
-    }
+    // if (!localIsPaid) {
+    //   onUnlockRequest?.();
+    //   return;
+    // }
 
     if (!panels || panels.length === 0) {
       toast.error('No panel data available for PDF generation');
@@ -747,7 +747,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
       setIsGeneratingImages(false);
       return;
     }
-    
+    debugger
     if (!panels || panels.length === 0) {
       toast.error("Cannot generate locked images without panel data.");
       setIsCreatingMagic(false);

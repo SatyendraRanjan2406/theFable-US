@@ -219,8 +219,9 @@ export const useFormData = () => {
       uploadedPhotoUrl: null,
       photoUploadedAt: null
     });
-    sessionStorage.removeItem('formData');
-    sessionStorage.removeItem('photoData');
+    // sessionStorage.removeItem('formData');
+    // Don't remove photoData from sessionStorage to preserve photo persistence
+    // sessionStorage.removeItem('photoData'); // ← Removed to preserve photo data
   };
 
   // Effect to save data to sessionStorage (simplified - no photo base64 conversion)

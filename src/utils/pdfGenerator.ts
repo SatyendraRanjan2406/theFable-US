@@ -66,37 +66,108 @@ export const generateComicPDF = async (
   // Front Cover Page
   pdf.addImage(bgDataUrlFront, 'JPEG', 0, 0, pageWidth, pageHeight);
   
-  // Add title in center below photo
+  // Add character photo with thick designer border if available
+  if (characterPhoto) {
+    try {
+      const characterDataUrl = await imageToDataURL(characterPhoto);
+      const photoSize = 80; // Larger photo size
+      const photoX = pageWidth / 2 - photoSize / 2;
+      const photoY = pageHeight / 2 - 60; // Position above title
+      
+      // Create thick designer border for the photo
+      const borderThickness = 8;
+      const borderPadding = 10;
+      const totalSize = photoSize + (borderPadding * 2) + (borderThickness * 2);
+      const borderX = photoX - borderPadding - borderThickness;
+      const borderY = photoY - borderPadding - borderThickness;
+      
+      // Outer shadow
+      pdf.setFillColor(0, 0, 0);
+      pdf.roundedRect(borderX + 3, borderY + 3, totalSize, totalSize, 20, 20, 'F');
+      
+      // Main border frame
+      pdf.setFillColor(255, 215, 0); // Gold color for designer border
+      pdf.roundedRect(borderX, borderY, totalSize, totalSize, 20, 20, 'F');
+      
+      // Inner border
+      pdf.setFillColor(255, 255, 255);
+      pdf.roundedRect(borderX + borderThickness, borderY + borderThickness, photoSize + (borderPadding * 2), photoSize + (borderPadding * 2), 15, 15, 'F');
+      
+      // Photo background
+      pdf.setFillColor(240, 240, 240);
+      pdf.roundedRect(borderX + borderThickness + borderPadding, borderY + borderThickness + borderPadding, photoSize, photoSize, 10, 10, 'F');
+      
+      // Add the photo
+      pdf.addImage(characterDataUrl, 'JPEG', borderX + borderThickness + borderPadding, borderY + borderThickness + borderPadding, photoSize, photoSize);
+      
+      // Add decorative corner elements to the border
+      pdf.setFillColor(255, 140, 0); // Orange accent
+      const cornerSize = 6;
+      // Top-left corner
+      pdf.rect(borderX + 5, borderY + 5, cornerSize, cornerSize, 'F');
+      // Top-right corner
+      pdf.rect(borderX + totalSize - 11, borderY + 5, cornerSize, cornerSize, 'F');
+      // Bottom-left corner
+      pdf.rect(borderX + 5, borderY + totalSize - 11, cornerSize, cornerSize, 'F');
+      // Bottom-right corner
+      pdf.rect(borderX + totalSize - 11, borderY + totalSize - 11, cornerSize, cornerSize, 'F');
+      
+    } catch (error) {
+      console.log('Could not add character photo to PDF:', error);
+    }
+  }
+  
+  // Add title with separate background frame
+  const titleFrameWidth = pageWidth - 80; // Leave 40px margin on each side
+  const titleFrameHeight = 80; // Height for title frame
+  const titleFrameX = 40; // X position (40px from left)
+  const titleFrameY = pageHeight / 2 + 20; // Y position below photo
+  
+  // Create title background frame
+  // Outer shadow
+  pdf.setFillColor(0, 0, 0);
+  pdf.roundedRect(titleFrameX + 2, titleFrameY + 2, titleFrameWidth, titleFrameHeight, 12, 12, 'F');
+  
+  // Main title background
+  pdf.setFillColor(255, 255, 255);
+  pdf.roundedRect(titleFrameX, titleFrameY, titleFrameWidth, titleFrameHeight, 12, 12, 'F');
+  
+  // Inner border for title frame
+  pdf.setDrawColor(100, 100, 100);
+  pdf.setLineWidth(2);
+  pdf.roundedRect(titleFrameX, titleFrameY, titleFrameWidth, titleFrameHeight, 12, 12);
+  
+  // Add decorative elements to title frame
+  pdf.setFillColor(150, 150, 150);
+  const titleCornerSize = 4;
+  // Top-left corner
+  pdf.rect(titleFrameX + 5, titleFrameY + 5, titleCornerSize, titleCornerSize, 'F');
+  // Top-right corner
+  pdf.rect(titleFrameX + titleFrameWidth - 9, titleFrameY + 5, titleCornerSize, titleCornerSize, 'F');
+  // Bottom-left corner
+  pdf.rect(titleFrameX + 5, titleFrameY + titleFrameHeight - 9, titleCornerSize, titleCornerSize, 'F');
+  // Bottom-right corner
+  pdf.rect(titleFrameX + titleFrameWidth - 9, titleFrameY + titleFrameHeight - 9, titleCornerSize, titleCornerSize, 'F');
+  
+  // Add title text
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(255, 255, 255); // White text for better visibility
+  pdf.setTextColor(50, 50, 50); // Dark text for better visibility on white frame
   let displayTitle = title || `${characterName}'s ${genre.charAt(0).toUpperCase() + genre.slice(1)} Adventure`;
   let titleFontSize = 28;
-  let titleY = pageHeight / 2 + 40;
+  let titleY = titleFrameY + (titleFrameHeight / 2) + 10; // Center in title frame
   pdf.setFontSize(titleFontSize);
   // Split title if too long
-  let titleLines = pdf.splitTextToSize(displayTitle, pageWidth - 40);
+  let titleLines = pdf.splitTextToSize(displayTitle, titleFrameWidth - 20);
   if (titleLines.length > 2) {
     // If still too many lines, reduce font size
     titleFontSize = 22;
     pdf.setFontSize(titleFontSize);
-    titleLines = pdf.splitTextToSize(displayTitle, pageWidth - 40);
+    titleLines = pdf.splitTextToSize(displayTitle, titleFrameWidth - 20);
   }
   // Center each line
   titleLines.forEach((line, i) => {
     pdf.text(line, pageWidth / 2, titleY + i * (titleFontSize + 2), { align: 'center' });
   });
-  
-  // Add character photo if available
-  if (characterPhoto) {
-    try {
-      //console.log('Adding character photo to PDF...');
-      const characterDataUrl = await imageToDataURL(characterPhoto);
-      pdf.addImage(characterDataUrl, 'JPEG', pageWidth / 2 - 30, pageHeight / 2 - 50, 60, 60);
-      //console.log('Character photo added successfully');
-    } catch (error) {
-      //console.log('Could not add character photo to PDF:', error);
-    }
-  }
   
   // Add "Powered by" text at bottom
   pdf.setFontSize(12);
@@ -189,6 +260,7 @@ export const generateComicPDF = async (
         const imageHeight = 120; // Bigger image since we have more space
         const imageX = x + 3;
         const imageY = y + 5;
+        debugger
         if (imageUrl && imageUrl !== 'undefined' && imageUrl !== null) {
           try {
             const imageDataUrl = imageUrl //await imageToDataURL(imageUrl);
@@ -271,11 +343,20 @@ export const generateComicPDF = async (
         pdf.rect(0, 0, pageWidth, pageHeight, 'F');
       }
       
-      // Add glassy gradient overlay from bottom to 3/4th of page
+      // Add gradient background behind text at bottom of page
       const gradientStartY = pageHeight * 0.75; // Start at 3/4th of page
       const gradientHeight = pageHeight - gradientStartY;
       
-      // No gradient overlay - using text shadow for readability instead
+      // Load and add gradient background image
+      try {
+        const gradientDataUrl = await imageToDataURL('/pdf-bg/gradient.png');
+        pdf.addImage(gradientDataUrl, 'PNG', 0, gradientStartY, pageWidth, gradientHeight);
+      } catch (error) {
+        console.log('🔍 PDF Generator: Failed to add gradient background, using fallback', error);
+        // Fallback to a simple gradient effect
+        pdf.setFillColor(0, 0, 0);
+        pdf.rect(0, gradientStartY, pageWidth, gradientHeight, 'F');
+      }
       
       // Add panel text at bottom with white color
       const textMargin = 20;
@@ -469,32 +550,105 @@ export const generateCuratedStoryPDF = async (
   // Front Cover Page
   pdf.addImage(bgDataUrlFront, 'JPEG', 0, 0, pageWidth, pageHeight);
   
-  // Add title
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(255, 255, 255);
-  let displayTitle = title || `${characterName}'s ${genre.charAt(0).toUpperCase() + genre.slice(1)} Adventure`;
-  let titleFontSize = 28;
-  let titleY = pageHeight / 2 + 40;
-  pdf.setFontSize(titleFontSize);
-  let titleLines = pdf.splitTextToSize(displayTitle, pageWidth - 40);
-  if (titleLines.length > 2) {
-    titleFontSize = 22;
-    pdf.setFontSize(titleFontSize);
-    titleLines = pdf.splitTextToSize(displayTitle, pageWidth - 40);
-  }
-  titleLines.forEach((line, i) => {
-    pdf.text(line, pageWidth / 2, titleY + i * (titleFontSize + 2), { align: 'center' });
-  });
-  
-  // Add character photo if available
+  // Add character photo with thick designer border if available
   if (characterPhoto) {
     try {
       const characterDataUrl = await imageToDataURL(characterPhoto);
-      pdf.addImage(characterDataUrl, 'JPEG', pageWidth / 2 - 30, pageHeight / 2 - 50, 60, 60);
+      const photoSize = 80; // Larger photo size
+      const photoX = pageWidth / 2 - photoSize / 2;
+      const photoY = pageHeight / 2 - 60; // Position above title
+      
+      // Create thick designer border for the photo
+      const borderThickness = 8;
+      const borderPadding = 10;
+      const totalSize = photoSize + (borderPadding * 2) + (borderThickness * 2);
+      const borderX = photoX - borderPadding - borderThickness;
+      const borderY = photoY - borderPadding - borderThickness;
+      
+      // Outer shadow
+      pdf.setFillColor(0, 0, 0);
+      pdf.roundedRect(borderX + 3, borderY + 3, totalSize, totalSize, 20, 20, 'F');
+      
+      // Main border frame
+      pdf.setFillColor(255, 215, 0); // Gold color for designer border
+      pdf.roundedRect(borderX, borderY, totalSize, totalSize, 20, 20, 'F');
+      
+      // Inner border
+      pdf.setFillColor(255, 255, 255);
+      pdf.roundedRect(borderX + borderThickness, borderY + borderThickness, photoSize + (borderPadding * 2), photoSize + (borderPadding * 2), 15, 15, 'F');
+      
+      // Photo background
+      pdf.setFillColor(240, 240, 240);
+      pdf.roundedRect(borderX + borderThickness + borderPadding, borderY + borderThickness + borderPadding, photoSize, photoSize, 10, 10, 'F');
+      
+      // Add the photo
+      pdf.addImage(characterDataUrl, 'JPEG', borderX + borderThickness + borderPadding, borderY + borderThickness + borderPadding, photoSize, photoSize);
+      
+      // Add decorative corner elements to the border
+      pdf.setFillColor(255, 140, 0); // Orange accent
+      const cornerSize = 6;
+      // Top-left corner
+      pdf.rect(borderX + 5, borderY + 5, cornerSize, cornerSize, 'F');
+      // Top-right corner
+      pdf.rect(borderX + totalSize - 11, borderY + 5, cornerSize, cornerSize, 'F');
+      // Bottom-left corner
+      pdf.rect(borderX + 5, borderY + totalSize - 11, cornerSize, cornerSize, 'F');
+      // Bottom-right corner
+      pdf.rect(borderX + totalSize - 11, borderY + totalSize - 11, cornerSize, cornerSize, 'F');
+      
     } catch (error) {
       console.log('Could not add character photo to PDF:', error);
     }
   }
+  
+  // Add title with separate background frame
+  const titleFrameWidth = pageWidth - 80; // Leave 40px margin on each side
+  const titleFrameHeight = 80; // Height for title frame
+  const titleFrameX = 40; // X position (40px from left)
+  const titleFrameY = pageHeight / 2 + 20; // Y position below photo
+  
+  // Create title background frame
+  // Outer shadow
+  pdf.setFillColor(0, 0, 0);
+  pdf.roundedRect(titleFrameX + 2, titleFrameY + 2, titleFrameWidth, titleFrameHeight, 12, 12, 'F');
+  
+  // Main title background
+  pdf.setFillColor(255, 255, 255);
+  pdf.roundedRect(titleFrameX, titleFrameY, titleFrameWidth, titleFrameHeight, 12, 12, 'F');
+  
+  // Inner border for title frame
+  pdf.setDrawColor(100, 100, 100);
+  pdf.setLineWidth(2);
+  pdf.roundedRect(titleFrameX, titleFrameY, titleFrameWidth, titleFrameHeight, 12, 12);
+  
+  // Add decorative elements to title frame
+  pdf.setFillColor(150, 150, 150);
+  const titleCornerSize = 4;
+  // Top-left corner
+  pdf.rect(titleFrameX + 5, titleFrameY + 5, titleCornerSize, titleCornerSize, 'F');
+  // Top-right corner
+  pdf.rect(titleFrameX + titleFrameWidth - 9, titleFrameY + 5, titleCornerSize, titleCornerSize, 'F');
+  // Bottom-left corner
+  pdf.rect(titleFrameX + 5, titleFrameY + titleFrameHeight - 9, titleCornerSize, titleCornerSize, 'F');
+  // Bottom-right corner
+  pdf.rect(titleFrameX + titleFrameWidth - 9, titleFrameY + titleFrameHeight - 9, titleCornerSize, titleCornerSize, 'F');
+  
+  // Add title text
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(50, 50, 50); // Dark text for better visibility on white frame
+  let displayTitle = title || `${characterName}'s ${genre.charAt(0).toUpperCase() + genre.slice(1)} Adventure`;
+  let titleFontSize = 28;
+  let titleY = titleFrameY + (titleFrameHeight / 2) + 10; // Center in title frame
+  pdf.setFontSize(titleFontSize);
+  let titleLines = pdf.splitTextToSize(displayTitle, titleFrameWidth - 20);
+  if (titleLines.length > 2) {
+    titleFontSize = 22;
+    pdf.setFontSize(titleFontSize);
+    titleLines = pdf.splitTextToSize(displayTitle, titleFrameWidth - 20);
+  }
+  titleLines.forEach((line, i) => {
+    pdf.text(line, pageWidth / 2, titleY + i * (titleFontSize + 2), { align: 'center' });
+  });
   
   // Add footer
   pdf.setFontSize(12);
@@ -620,11 +774,20 @@ export const generateCuratedStoryPDF = async (
         pdf.rect(0, 0, pageWidth, pageHeight, 'F');
       }
       
-      // Add glassy gradient overlay from bottom to 3/4th of page
+      // Add gradient background behind text at bottom of page
       const gradientStartY = pageHeight * 0.75; // Start at 3/4th of page
       const gradientHeight = pageHeight - gradientStartY;
       
-      // No gradient overlay - using text shadow for readability instead
+      // Load and add gradient background image
+      try {
+        const gradientDataUrl = await imageToDataURL('/pdf-bg/gradient.png');
+        pdf.addImage(gradientDataUrl, 'PNG', 0, gradientStartY, pageWidth, gradientHeight);
+      } catch (error) {
+        console.log('🔍 Curated PDF Generator: Failed to add gradient background, using fallback', error);
+        // Fallback to a simple gradient effect
+        pdf.setFillColor(0, 0, 0);
+        pdf.rect(0, gradientStartY, pageWidth, gradientHeight, 'F');
+      }
       
       // Add panel text at bottom with white color and subtle shadow
       const textMargin = 20;

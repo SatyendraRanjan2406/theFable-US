@@ -165,7 +165,7 @@ export const handleOAuthLogin = async (
   authorizationUrl: string,
   onSuccess: () => void,
   onError?: (error: string) => void
-): Promise<void> => {
+): Promise<(() => void) | void> => {
   const browserInfo = getBrowserInfo();
   console.log('🚀 Starting OAuth login with browser:', browserInfo);
 

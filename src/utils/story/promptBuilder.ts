@@ -49,6 +49,7 @@ CRITICAL STORY REQUIREMENTS:
 3. CONSISTENT CHARACTER: ${request.characterName} should act consistently throughout
 4. LOGICAL PROGRESSION: Each page should build on the previous one
 5. COMPLETE STORY ARC: Clear beginning, middle, and satisfying end
+6. When the new character is introduced in the story, create a visual description of the character and the setting and use it in every panel where the character is present.
 
 MANDATORY STORY STRUCTURE:
 ${getSimpleStoryStructure(request.pages, request.characterName, pronouns, request.genre)}
@@ -60,7 +61,6 @@ STRICT FORMATTING RULES:
 - Each panel format: *[Clear visual description]* followed by story text and dialogue
 - Keep visual descriptions focused and specific
 - Make story text natural and conversational
-
 ENHANCED PANEL FORMAT EXAMPLE:
 **Panel 1:** *${request.characterName} sits in ${pronouns.possessive} bedroom, sunlight streaming through the window. ${pronouns.subject.charAt(0).toUpperCase() + pronouns.subject.slice(1)} looks excited and ready for adventure.* 
 
@@ -88,6 +88,7 @@ VISUAL DESCRIPTION GUIDELINES:
 - Show emotions through character body language
 - Make scenes easy to visualize
 - Avoid overly complex descriptions
+- for each of the new character introduced in the story, create a visual description of the character in the beginning of the story and the setting and use it in every panel  where the character is present as part of the panel text.
 
 DIALOGUE RULES:
 - Sound like a real ${request.characterAge}-year-old talking

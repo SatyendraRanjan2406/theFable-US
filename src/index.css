@@ -55,6 +55,19 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Ensure proper scrolling behavior when devtools is open */
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: auto;
+    min-height: 100vh;
+  }
+  
+  html {
+    /* Ensure proper scrolling behavior when devtools is open */
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: auto;
+    scroll-behavior: smooth;
   }
 }
 
@@ -71,6 +84,37 @@
 /* Toast specific improvements */
 .toaster {
   z-index: 9999;
+}
+
+/* Fix for viewport height issues when devtools is open */
+@supports (height: 100dvh) {
+  body {
+    min-height: 100dvh;
+  }
+}
+
+/* Alternative fix for browsers that don't support dvh */
+@media screen and (max-height: 600px) {
+  body {
+    min-height: 100vh;
+  }
+}
+
+/* Dynamic viewport height fix for devtools */
+:root {
+  --vh: 1vh;
+}
+
+/* Update viewport height on resize */
+@media screen and (max-width: 768px) {
+  :root {
+    --vh: 1vh;
+  }
+}
+
+/* Ensure content uses dynamic viewport height */
+body {
+  min-height: calc(var(--vh, 1vh) * 100);
 }
 
 .toast {
