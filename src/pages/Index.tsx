@@ -421,7 +421,16 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
               genre: storyData.genre || storyData.story_genre || 'adventure',
               storyOutline: '', // We'll reconstruct this if needed
             }));
-            setExising_photo_url(storyData.photo_url);
+            
+            // Extract character photo from panels response (edit mode) or story data (fallback)
+            const characterPhoto = panelsResponse.story?.photo_url || storyData.photo_url;
+            setExising_photo_url(characterPhoto);
+            
+            console.log('🔍 Character photo extracted:', {
+              from_panels_response: panelsResponse.story?.photo_url,
+              from_story_data: storyData.photo_url,
+              final: characterPhoto
+            });
             // Set story state
             setGeneratedTitle(storyData.title || storyData.story_title || `${characterName}'s Story`);
             setStorybookText(reconstructedStory);

@@ -63,8 +63,8 @@ export const generateComicPDF = async (
     imagesArray = imageKeys.map(key => generatedImages[key]).filter(img => img && img !== 'undefined');
   }
   
-  // Front Cover Page
-  pdf.addImage(bgDataUrlFront, 'JPEG', 0, 0, pageWidth, pageHeight);
+  // Front Cover Page - Start background from -30 from bottom
+  pdf.addImage(bgDataUrlFront, 'JPEG', 0, 0, pageWidth, pageHeight );
   
   // Add character photo with thick designer border if available
   if (characterPhoto) {
@@ -117,66 +117,123 @@ export const generateComicPDF = async (
     }
   }
   
-  // Add title with separate background frame
+  // Add title with title.png background frame
   const titleFrameWidth = pageWidth - 80; // Leave 40px margin on each side
-  const titleFrameHeight = 80; // Height for title frame
+  const titleFrameHeight = 70; // Height for title frame
   const titleFrameX = 40; // X position (40px from left)
-  const titleFrameY = pageHeight / 2 + 20; // Y position below photo
+  const titleFrameY = pageHeight / 2 + 40; // Y position below photo
   
-  // Create title background frame
-  // Outer shadow
-  pdf.setFillColor(0, 0, 0);
-  pdf.roundedRect(titleFrameX + 2, titleFrameY + 2, titleFrameWidth, titleFrameHeight, 12, 12, 'F');
-  
-  // Main title background
-  pdf.setFillColor(255, 255, 255);
-  pdf.roundedRect(titleFrameX, titleFrameY, titleFrameWidth, titleFrameHeight, 12, 12, 'F');
-  
-  // Inner border for title frame
-  pdf.setDrawColor(100, 100, 100);
-  pdf.setLineWidth(2);
-  pdf.roundedRect(titleFrameX, titleFrameY, titleFrameWidth, titleFrameHeight, 12, 12);
-  
-  // Add decorative elements to title frame
-  pdf.setFillColor(150, 150, 150);
-  const titleCornerSize = 4;
-  // Top-left corner
-  pdf.rect(titleFrameX + 5, titleFrameY + 5, titleCornerSize, titleCornerSize, 'F');
-  // Top-right corner
-  pdf.rect(titleFrameX + titleFrameWidth - 9, titleFrameY + 5, titleCornerSize, titleCornerSize, 'F');
-  // Bottom-left corner
-  pdf.rect(titleFrameX + 5, titleFrameY + titleFrameHeight - 9, titleCornerSize, titleCornerSize, 'F');
-  // Bottom-right corner
-  pdf.rect(titleFrameX + titleFrameWidth - 9, titleFrameY + titleFrameHeight - 9, titleCornerSize, titleCornerSize, 'F');
-  
-  // Add title text
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(50, 50, 50); // Dark text for better visibility on white frame
-  let displayTitle = title || `${characterName}'s ${genre.charAt(0).toUpperCase() + genre.slice(1)} Adventure`;
-  let titleFontSize = 28;
-  let titleY = titleFrameY + (titleFrameHeight / 2) + 10; // Center in title frame
-  pdf.setFontSize(titleFontSize);
-  // Split title if too long
-  let titleLines = pdf.splitTextToSize(displayTitle, titleFrameWidth - 20);
-  if (titleLines.length > 2) {
-    // If still too many lines, reduce font size
-    titleFontSize = 22;
-    pdf.setFontSize(titleFontSize);
-    titleLines = pdf.splitTextToSize(displayTitle, titleFrameWidth - 20);
+  // Load and add title.png background with transparency
+  try {
+    const titleBgDataUrl = await imageToDataURL('/pdf-bg/title.png');
+    // Calculate aspect ratio to maintain proportions
+    const titleBgAspectRatio = 2.3; // Approximate aspect ratio of title.png (width/height)
+    const titleBgHeight = titleFrameHeight;
+    const titleBgWidth = titleBgHeight * titleBgAspectRatio;
+    
+    // Center the title background within the available space
+    const titleBgX = titleFrameX + (titleFrameWidth - titleBgWidth) / 2;
+    const titleBgY = titleFrameY;
+    
+    // Add a subtle white background behind the title.png for better transparency
+    pdf.setFillColor(255, 255, 255);
+    pdf.setDrawColor(240, 240, 240);
+    pdf.setLineWidth(1);
+    pdf.roundedRect(titleBgX - 5, titleBgY - 1, titleBgWidth + 10, titleBgHeight + 2, 15, 15, 'F');
+    pdf.roundedRect(titleBgX - 5, titleBgY - 1, titleBgWidth + 10, titleBgHeight + 2, 15, 15);
+    
+    // Add the title.png with transparency support
+    // pdf.addImage(titleBgDataUrl, 'PNG', titleBgX, titleBgY, titleBgWidth, titleBgHeight, undefined, 'FAST', 0);
+  } catch (error) {
+    console.log('🔍 PDF Generator: Failed to add title background, using fallback', error);
+    // Fallback to original white background
+    pdf.setFillColor(255, 255, 255);
+    pdf.roundedRect(titleFrameX, titleFrameY, titleFrameWidth, titleFrameHeight, 12, 12, 'F');
+    
+    // Inner border for title frame
+    pdf.setDrawColor(100, 100, 100);
+    pdf.setLineWidth(2);
+    pdf.roundedRect(titleFrameX, titleFrameY, titleFrameWidth, titleFrameHeight, 12, 12);
+    
+    // Add decorative elements to title frame
+    pdf.setFillColor(150, 150, 150);
+    const titleCornerSize = 4;
+    // Top-left corner
+    pdf.rect(titleFrameX + 5, titleFrameY + 5, titleCornerSize, titleCornerSize, 'F');
+    // Top-right corner
+    pdf.rect(titleFrameX + titleFrameWidth - 9, titleFrameY + 5, titleCornerSize, titleCornerSize, 'F');
+    // Bottom-left corner
+    pdf.rect(titleFrameX + 5, titleFrameY + titleFrameHeight - 9, titleCornerSize, titleCornerSize, 'F');
+    // Bottom-right corner
+    pdf.rect(titleFrameX + titleFrameWidth - 9, titleFrameY + titleFrameHeight - 9, titleCornerSize, titleCornerSize, 'F');
   }
-  // Center each line
+  
+  // Add title text - responsive to title.png background
+  pdf.setFont('times', 'bold');
+  pdf.setTextColor(205, 133, 63); // Golden brown color for stylish appearance
+  let displayTitle = title || `${characterName}'s ${genre.charAt(0).toUpperCase() + genre.slice(1)} Adventure`;
+  
+  // Calculate responsive text positioning based on title.png dimensions
+  const titleBgAspectRatio = 2.5;
+  const titleBgHeight = titleFrameHeight;
+  const titleBgWidth = titleBgHeight * titleBgAspectRatio;
+  const titleBgX = titleFrameX + (titleFrameWidth - titleBgWidth) / 2;
+  
+  // Text area within the title.png background - centered both vertically and horizontally
+  const textAreaWidth = titleBgWidth * 0.7; // Use 70% of title.png width for text
+  const textAreaX = titleBgX + (titleBgWidth * 0.15); // 15% margin from left edge for better centering
+  
+  // Responsive font sizing
+  let titleFontSize = Math.min(38, Math.floor(titleBgHeight * 0.4)); // Responsive font size
+  pdf.setFontSize(titleFontSize);
+  
+  // Split title to fit within title.png background
+  let titleLines = pdf.splitTextToSize(displayTitle, textAreaWidth);
+  
+  // Adjust font size if text is too long
+  if (titleLines.length > 2) {
+    titleFontSize = Math.min(35, Math.floor(titleBgHeight * 0.45));
+    pdf.setFontSize(titleFontSize);
+    titleLines = pdf.splitTextToSize(displayTitle, textAreaWidth);
+  }
+  
+  // Perfect center text within title.png background
+  const lineHeight = titleFontSize + 2;
+  const totalTextHeight = titleLines.length * lineHeight;
+  const textStartY = titleFrameY + (titleBgHeight - totalTextHeight) / 2; // Perfect vertical center
+  
   titleLines.forEach((line, i) => {
-    pdf.text(line, pageWidth / 2, titleY + i * (titleFontSize + 2), { align: 'center' });
+    const lineY = textStartY + (i * lineHeight);
+    pdf.text(line, titleBgX + (titleBgWidth / 2), lineY+15, { align: 'center' });
   });
   
-  // Add "Powered by" text at bottom
-  pdf.setFontSize(12);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(255, 255, 255);
-  pdf.text(getPoweredByText(), pageWidth / 2, pageHeight - 20, { align: 'center' });
+  // Add "Powered by" text at bottom right with white background
+  const poweredByText = getPoweredByText();
+  pdf.setFontSize(18); // Increased font size
+  pdf.setFont('helvetica', 'bold'); // Made it bold for better visibility
+  pdf.setTextColor(205, 133, 63); // Golden brown color
+  
+  // Calculate text dimensions for background
+  const textWidth = pdf.getTextWidth(poweredByText);
+  const textHeight = 8; // Approximate text height
+  const padding = 8; // Padding around text
+  
+  // Position at bottom right
+  const textX = pageWidth - textWidth - padding -30; // 20px from right edge
+  const textY = pageHeight - 4; // 2px from bottom - moved further down
+  
+  // Add white background with rounded corners
+  pdf.setFillColor(255, 255, 255); // White background
+  pdf.setDrawColor(200, 200, 200); // Light gray border
+  pdf.setLineWidth(1);
+  pdf.roundedRect(textX - padding, textY - textHeight - padding/2, textWidth + padding*4, textHeight + padding, 8, 8, 'F');
+  pdf.roundedRect(textX - padding, textY - textHeight - padding/2, textWidth + padding*4, textHeight + padding, 8, 8);
+  
+  // Add the text
+  pdf.text(poweredByText, textX+15, textY, { align: 'left' });
   
   // Add hyperlink to the text (opens in new tab)
-  pdf.link(pageWidth / 2 - 50, pageHeight - 25, 100, 10, { url: `https://${import.meta.env.VITE_APP_DOMAIN || 'storymaker.jcool.in'}`, target: '_blank' });
+  pdf.link(textX - padding, textY - textHeight - padding/2, textWidth + padding*2, textHeight + padding, { url: `https://${import.meta.env.VITE_APP_DOMAIN || 'storymaker.jcool.in'}`, target: '_blank' });
   
   // Now start the comic panels on a new page (no background)
   pdf.addPage();
@@ -248,12 +305,24 @@ export const generateComicPDF = async (
         const cleanText = cleanPanelTextForDisplay(panelText);
         const y = margin + (panelIndex - startPanelIndex) * (panelHeight + margin);
         const x = margin;
-        // Fancy border
+        // Stylish non-rounded border
         pdf.setDrawColor(255, 182, 193);
-        pdf.setLineWidth(2);
-        pdf.roundedRect(x, y, panelWidth, panelHeight, 8, 8);
+        pdf.setLineWidth(3);
+        pdf.rect(x, y, panelWidth, panelHeight);
         pdf.setFillColor(255, 250, 240);
-        pdf.roundedRect(x+1, y+1, panelWidth-2, panelHeight-2, 7, 7, 'F');
+        pdf.rect(x+2, y+2, panelWidth-4, panelHeight-4, 'F');
+        
+        // Add stylish corner accents
+        pdf.setFillColor(255, 140, 0); // Orange accent
+        const cornerSize = 8;
+        // Top-left corner
+        pdf.rect(x+3, y+3, cornerSize, cornerSize, 'F');
+        // Top-right corner
+        pdf.rect(x+panelWidth-11, y+3, cornerSize, cornerSize, 'F');
+        // Bottom-left corner
+        pdf.rect(x+3, y+panelHeight-11, cornerSize, cornerSize, 'F');
+        // Bottom-right corner
+        pdf.rect(x+panelWidth-11, y+panelHeight-11, cornerSize, cornerSize, 'F');
         // Image
         const imageUrl = imagesArray[panelIndex];
         const imageWidth = panelWidth - 6;
@@ -396,9 +465,10 @@ export const generateComicPDF = async (
       pdf.text(`${panelIndex + 1}`, pageCircleX, pageCircleY + 3, { align: 'center' });
     }
   } else {
-    // Grid view: 2x2 grid (4 panels per page)
-  const panelWidth = (pageWidth - margin * 3) / 2;
-    const panelHeight = 110;
+    // Grid view: 2x2 grid (4 panels per page) - Optimized for larger panels and smaller font
+    const reducedMargin = 12; // Reduced from 20 to 12
+    const panelWidth = (pageWidth - reducedMargin * 3) / 2;
+    const panelHeight = 125; // Reduced from 130 to 125 to fit within page
     const panelsPerPage = 4; // 2x2 grid per page
     const totalPages = Math.ceil(panelsToShow.length / panelsPerPage);
     console.log('🔍 PDF Generator: Grid view - Total panels:', panelsToShow.length, 'Total pages:', totalPages);
@@ -415,7 +485,7 @@ export const generateComicPDF = async (
       // pdf.setTextColor(70, 130, 180);
       // pdf.setFont('helvetica', 'bold');
       // pdf.text('Comic Panels', pageWidth / 2, 24, { align: 'center' });
-  const startY = 35;
+    const startY = 25; // Reduced from 35 to 25
       const startPanelIndex = pageNum * panelsPerPage;
       const endPanelIndex = Math.min(startPanelIndex + panelsPerPage, panelsToShow.length);
       for (let panelIndex = startPanelIndex; panelIndex < endPanelIndex; panelIndex++) {
@@ -425,16 +495,29 @@ export const generateComicPDF = async (
         const pagePanelIndex = panelIndex - startPanelIndex;
         const row = Math.floor(pagePanelIndex / 2);
         const col = pagePanelIndex % 2;
-    const x = margin + col * (panelWidth + margin);
-    const y = startY + row * (panelHeight + margin);
+    const x = reducedMargin + col * (panelWidth + reducedMargin);
+    const y = startY + row * (panelHeight + reducedMargin);
+        // Stylish non-rounded border
         pdf.setDrawColor(255, 182, 193);
-        pdf.setLineWidth(2);
-        pdf.roundedRect(x, y, panelWidth, panelHeight, 8, 8);
+        pdf.setLineWidth(3);
+        pdf.rect(x, y, panelWidth, panelHeight);
         pdf.setFillColor(255, 250, 240);
-        pdf.roundedRect(x+1, y+1, panelWidth-2, panelHeight-2, 7, 7, 'F');
+        pdf.rect(x+2, y+2, panelWidth-4, panelHeight-4, 'F');
+        
+        // Add stylish corner accents
+        pdf.setFillColor(255, 140, 0); // Orange accent
+        const cornerSize = 6;
+        // Top-left corner
+        pdf.rect(x+3, y+3, cornerSize, cornerSize, 'F');
+        // Top-right corner
+        pdf.rect(x+panelWidth-9, y+3, cornerSize, cornerSize, 'F');
+        // Bottom-left corner
+        pdf.rect(x+3, y+panelHeight-9, cornerSize, cornerSize, 'F');
+        // Bottom-right corner
+        pdf.rect(x+panelWidth-9, y+panelHeight-9, cornerSize, cornerSize, 'F');
     const imageUrl = imagesArray[panelIndex];
     const imageWidth = panelWidth - 6;
-        const imageHeight = 60;
+        const imageHeight = 70; // Increased from 60 to 70
     const imageX = x + 3;
     const imageY = y + 5;
     if (imageUrl && imageUrl !== 'undefined' && imageUrl !== null) {
@@ -458,16 +541,16 @@ export const generateComicPDF = async (
       pdf.setTextColor(0, 0, 0);
     }
     const textX = x + 3;
-        const textY = imageY + imageHeight + 10;
+        const textY = imageY + imageHeight + 8; // Reduced from 10 to 8
     const textWidth = panelWidth - 6;
-        const textHeight = panelHeight - (imageHeight + 15);
+        const textHeight = panelHeight - (imageHeight + 12); // Reduced from 15 to 12
     pdf.setFillColor(255, 255, 255);
     pdf.rect(textX, textY - 2, textWidth, textHeight, 'F');
-        pdf.setFontSize(12); // Bigger font
+        pdf.setFontSize(11); // Increased from 10 to 11 for better readability
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(0, 0, 0);
     const textLines = pdf.splitTextToSize(cleanText, textWidth - 4);
-        const lineHeight = 5;
+        const lineHeight = 4; // Reduced from 5 to 4
     const maxLines = Math.floor(textHeight / lineHeight);
     const displayLines = textLines.slice(0, maxLines);
     for (let lineIndex = 0; lineIndex < displayLines.length; lineIndex++) {
@@ -547,8 +630,8 @@ export const generateCuratedStoryPDF = async (
   const bgDataUrlFront = await imageToDataURL(bgImageFrontUrl);
   const bgDataUrlBack = await imageToDataURL(bgImageBackUrl);
 
-  // Front Cover Page
-  pdf.addImage(bgDataUrlFront, 'JPEG', 0, 0, pageWidth, pageHeight);
+  // Front Cover Page - Start background from -30 from bottom
+  pdf.addImage(bgDataUrlFront, 'JPEG', 0, -30, pageWidth, pageHeight + 30);
   
   // Add character photo with thick designer border if available
   if (characterPhoto) {
@@ -601,61 +684,123 @@ export const generateCuratedStoryPDF = async (
     }
   }
   
-  // Add title with separate background frame
-  const titleFrameWidth = pageWidth - 80; // Leave 40px margin on each side
-  const titleFrameHeight = 80; // Height for title frame
-  const titleFrameX = 40; // X position (40px from left)
+  // Add title with title.png background frame
+  const titleFrameWidth = pageWidth - 180; // Leave 90px margin on each side
+  const titleFrameHeight = 40; // Height for title frame
+  const titleFrameX = 90; // X position (90px from left)
   const titleFrameY = pageHeight / 2 + 20; // Y position below photo
   
-  // Create title background frame
-  // Outer shadow
-  pdf.setFillColor(0, 0, 0);
-  pdf.roundedRect(titleFrameX + 2, titleFrameY + 2, titleFrameWidth, titleFrameHeight, 12, 12, 'F');
-  
-  // Main title background
-  pdf.setFillColor(255, 255, 255);
-  pdf.roundedRect(titleFrameX, titleFrameY, titleFrameWidth, titleFrameHeight, 12, 12, 'F');
-  
-  // Inner border for title frame
-  pdf.setDrawColor(100, 100, 100);
-  pdf.setLineWidth(2);
-  pdf.roundedRect(titleFrameX, titleFrameY, titleFrameWidth, titleFrameHeight, 12, 12);
-  
-  // Add decorative elements to title frame
-  pdf.setFillColor(150, 150, 150);
-  const titleCornerSize = 4;
-  // Top-left corner
-  pdf.rect(titleFrameX + 5, titleFrameY + 5, titleCornerSize, titleCornerSize, 'F');
-  // Top-right corner
-  pdf.rect(titleFrameX + titleFrameWidth - 9, titleFrameY + 5, titleCornerSize, titleCornerSize, 'F');
-  // Bottom-left corner
-  pdf.rect(titleFrameX + 5, titleFrameY + titleFrameHeight - 9, titleCornerSize, titleCornerSize, 'F');
-  // Bottom-right corner
-  pdf.rect(titleFrameX + titleFrameWidth - 9, titleFrameY + titleFrameHeight - 9, titleCornerSize, titleCornerSize, 'F');
-  
-  // Add title text
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(50, 50, 50); // Dark text for better visibility on white frame
-  let displayTitle = title || `${characterName}'s ${genre.charAt(0).toUpperCase() + genre.slice(1)} Adventure`;
-  let titleFontSize = 28;
-  let titleY = titleFrameY + (titleFrameHeight / 2) + 10; // Center in title frame
-  pdf.setFontSize(titleFontSize);
-  let titleLines = pdf.splitTextToSize(displayTitle, titleFrameWidth - 20);
-  if (titleLines.length > 2) {
-    titleFontSize = 22;
-    pdf.setFontSize(titleFontSize);
-    titleLines = pdf.splitTextToSize(displayTitle, titleFrameWidth - 20);
+  // Load and add title.png background with transparency
+  try {
+    const titleBgDataUrl = await imageToDataURL('/pdf-bg/title.png');
+    // Calculate aspect ratio to maintain proportions
+    const titleBgAspectRatio = 2.5; // Approximate aspect ratio of title.png (width/height)
+    const titleBgHeight = titleFrameHeight;
+    const titleBgWidth = titleBgHeight * titleBgAspectRatio;
+    
+    // Center the title background within the available space
+    const titleBgX = titleFrameX + (titleFrameWidth - titleBgWidth) / 2;
+    const titleBgY = titleFrameY;
+    
+    // Add a subtle white background behind the title.png for better transparency
+    pdf.setFillColor(255, 255, 255);
+    pdf.setDrawColor(240, 240, 240);
+    pdf.setLineWidth(1);
+    pdf.roundedRect(titleBgX - 5, titleBgY - 1, titleBgWidth + 10, titleBgHeight + 2, 15, 15, 'F');
+    pdf.roundedRect(titleBgX - 5, titleBgY - 1, titleBgWidth + 10, titleBgHeight + 2, 15, 15);
+    
+    // Add the title.png with transparency support
+    // pdf.addImage(titleBgDataUrl, 'PNG', titleBgX, titleBgY, titleBgWidth, titleBgHeight, undefined, 'FAST', 0);
+  } catch (error) {
+    console.log('🔍 Curated PDF Generator: Failed to add title background, using fallback', error);
+    // Fallback to original white background
+    pdf.setFillColor(255, 255, 255);
+    pdf.roundedRect(titleFrameX, titleFrameY, titleFrameWidth, titleFrameHeight, 12, 12, 'F');
+    
+    // Inner border for title frame
+    pdf.setDrawColor(100, 100, 100);
+    pdf.setLineWidth(2);
+    pdf.roundedRect(titleFrameX, titleFrameY, titleFrameWidth, titleFrameHeight, 12, 12);
+    
+    // Add decorative elements to title frame
+    pdf.setFillColor(150, 150, 150);
+    const titleCornerSize = 4;
+    // Top-left corner
+    pdf.rect(titleFrameX + 5, titleFrameY + 5, titleCornerSize, titleCornerSize, 'F');
+    // Top-right corner
+    pdf.rect(titleFrameX + titleFrameWidth - 9, titleFrameY + 5, titleCornerSize, titleCornerSize, 'F');
+    // Bottom-left corner
+    pdf.rect(titleFrameX + 5, titleFrameY + titleFrameHeight - 9, titleCornerSize, titleCornerSize, 'F');
+    // Bottom-right corner
+    pdf.rect(titleFrameX + titleFrameWidth - 9, titleFrameY + titleFrameHeight - 9, titleCornerSize, titleCornerSize, 'F');
   }
+  
+  // Add title text - responsive to title.png background
+  pdf.setFont('times', 'bold');
+  pdf.setTextColor(205, 133, 63); // Golden brown color for stylish appearance
+  let displayTitle = title || `${characterName}'s ${genre.charAt(0).toUpperCase() + genre.slice(1)} Adventure`;
+  
+  // Calculate responsive text positioning based on title.png dimensions
+  const titleBgAspectRatio = 2.5;
+  const titleBgHeight = titleFrameHeight;
+  const titleBgWidth = titleBgHeight * titleBgAspectRatio;
+  const titleBgX = titleFrameX + (titleFrameWidth - titleBgWidth) / 2;
+  
+  // Text area within the title.png background - centered both vertically and horizontally
+  const textAreaWidth = titleBgWidth * 0.7; // Use 70% of title.png width for text
+  const textAreaX = titleBgX + (titleBgWidth * 0.15); // 15% margin from left edge for better centering
+  
+  // Responsive font sizing
+  let titleFontSize = Math.min(38, Math.floor(titleBgHeight * 0.4)); // Responsive font size
+  pdf.setFontSize(titleFontSize);
+  
+  // Split title to fit within title.png background
+  let titleLines = pdf.splitTextToSize(displayTitle, textAreaWidth);
+  
+  // Adjust font size if text is too long
+  if (titleLines.length > 2) {
+    titleFontSize = Math.min(35, Math.floor(titleBgHeight * 0.35));
+    pdf.setFontSize(titleFontSize);
+    titleLines = pdf.splitTextToSize(displayTitle, textAreaWidth);
+  }
+  
+  // Perfect center text within title.png background
+  const lineHeight = titleFontSize + 2;
+  const totalTextHeight = titleLines.length * lineHeight;
+  const textStartY = titleFrameY + (titleBgHeight - totalTextHeight) / 2; // Perfect vertical center
+  
   titleLines.forEach((line, i) => {
-    pdf.text(line, pageWidth / 2, titleY + i * (titleFontSize + 2), { align: 'center' });
+    const lineY = textStartY + (i * lineHeight);
+    pdf.text(line, titleBgX + (titleBgWidth / 2), lineY, { align: 'center' });
   });
   
-  // Add footer
-  pdf.setFontSize(12);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(255, 255, 255);
-  pdf.text(getPoweredByText(), pageWidth / 2, pageHeight - 20, { align: 'center' });
-  pdf.link(pageWidth / 2 - 50, pageHeight - 25, 100, 10, { url: `https://${import.meta.env.VITE_APP_DOMAIN || 'storymaker.jcool.in'}`, target: '_blank' });
+  // Add footer - "Powered by" text at bottom right with white background
+  const poweredByText = getPoweredByText();
+  pdf.setFontSize(16); // Increased font size
+  pdf.setFont('helvetica', 'bold'); // Made it bold for better visibility
+  pdf.setTextColor(205, 133, 63); // Golden brown color
+  
+  // Calculate text dimensions for background
+  const textWidth = pdf.getTextWidth(poweredByText);
+  const textHeight = 8; // Approximate text height
+  const padding = 8; // Padding around text
+  
+  // Position at bottom right
+  const textX = pageWidth - textWidth - padding - 20; // 20px from right edge
+  const textY = pageHeight - 2; // 2px from bottom - moved further down
+  
+  // Add white background with rounded corners
+  pdf.setFillColor(255, 255, 255); // White background
+  pdf.setDrawColor(200, 200, 200); // Light gray border
+  pdf.setLineWidth(1);
+  pdf.roundedRect(textX - padding, textY - textHeight - padding/2-10, textWidth + padding*2, textHeight + padding, 8, 8, 'F');
+  pdf.roundedRect(textX - padding, textY - textHeight - padding/2-10, textWidth + padding*2, textHeight + padding, 8, 8);
+  
+  // Add the text
+  pdf.text(poweredByText, textX, textY, { align: 'left' });
+  
+  // Add hyperlink to the text (opens in new tab)
+  pdf.link(textX - padding, textY - textHeight - padding/2, textWidth + padding*2, textHeight + padding, { url: `https://${import.meta.env.VITE_APP_DOMAIN || 'storymaker.jcool.in'}`, target: '_blank' });
   
   // Start comic panels on new page
   pdf.addPage();
@@ -678,12 +823,24 @@ export const generateCuratedStoryPDF = async (
       const x = margin;
       const y = margin;
       
-      // Panel border
+      // Stylish non-rounded panel border
       pdf.setDrawColor(255, 182, 193);
-      pdf.setLineWidth(2);
-      pdf.roundedRect(x, y, panelWidth, panelHeight, 8, 8);
+      pdf.setLineWidth(3);
+      pdf.rect(x, y, panelWidth, panelHeight);
       pdf.setFillColor(255, 250, 240);
-      pdf.roundedRect(x+1, y+1, panelWidth-2, panelHeight-2, 7, 7, 'F');
+      pdf.rect(x+2, y+2, panelWidth-4, panelHeight-4, 'F');
+      
+      // Add stylish corner accents
+      pdf.setFillColor(255, 140, 0); // Orange accent
+      const cornerSize = 8;
+      // Top-left corner
+      pdf.rect(x+3, y+3, cornerSize, cornerSize, 'F');
+      // Top-right corner
+      pdf.rect(x+panelWidth-11, y+3, cornerSize, cornerSize, 'F');
+      // Bottom-left corner
+      pdf.rect(x+3, y+panelHeight-11, cornerSize, cornerSize, 'F');
+      // Bottom-right corner
+      pdf.rect(x+panelWidth-11, y+panelHeight-11, cornerSize, cornerSize, 'F');
       
       // Image
       const imageWidth = panelWidth - 6;
@@ -837,16 +994,17 @@ export const generateCuratedStoryPDF = async (
       pdf.text(`${panelIndex + 1}`, pageCircleX, pageCircleY + 3, { align: 'center' });
     }
   } else {
-    // Grid view: 2x2 grid (4 panels per page)
-    const panelWidth = (pageWidth - margin * 3) / 2;
-    const panelHeight = 110;
+    // Grid view: 2x2 grid (4 panels per page) - Optimized for larger panels and smaller font
+    const reducedMargin = 12; // Reduced from 20 to 12
+    const panelWidth = (pageWidth - reducedMargin * 3) / 2;
+    const panelHeight = 125; // Reduced from 130 to 125 to fit within page
     const panelsPerPage = 4;
     const totalPages = Math.ceil(panelTexts.length / panelsPerPage);
     
     for (let pageNum = 0; pageNum < totalPages; pageNum++) {
       if (pageNum > 0) { pdf.addPage(); }
       
-      const startY = 35;
+      const startY = 25; // Reduced from 35 to 25
       const startPanelIndex = pageNum * panelsPerPage;
       const endPanelIndex = Math.min(startPanelIndex + panelsPerPage, panelTexts.length);
       
@@ -862,19 +1020,31 @@ export const generateCuratedStoryPDF = async (
         const pagePanelIndex = panelIndex - startPanelIndex;
         const row = Math.floor(pagePanelIndex / 2);
         const col = pagePanelIndex % 2;
-        const x = margin + col * (panelWidth + margin);
-        const y = startY + row * (panelHeight + margin);
+        const x = reducedMargin + col * (panelWidth + reducedMargin);
+        const y = startY + row * (panelHeight + reducedMargin);
         
-        // Panel border
+        // Stylish non-rounded panel border
         pdf.setDrawColor(255, 182, 193);
-        pdf.setLineWidth(2);
-        pdf.roundedRect(x, y, panelWidth, panelHeight, 8, 8);
+        pdf.setLineWidth(3);
+        pdf.rect(x, y, panelWidth, panelHeight);
         pdf.setFillColor(255, 250, 240);
-        pdf.roundedRect(x+1, y+1, panelWidth-2, panelHeight-2, 7, 7, 'F');
+        pdf.rect(x+2, y+2, panelWidth-4, panelHeight-4, 'F');
+        
+        // Add stylish corner accents
+        pdf.setFillColor(255, 140, 0); // Orange accent
+        const cornerSize = 6;
+        // Top-left corner
+        pdf.rect(x+3, y+3, cornerSize, cornerSize, 'F');
+        // Top-right corner
+        pdf.rect(x+panelWidth-9, y+3, cornerSize, cornerSize, 'F');
+        // Bottom-left corner
+        pdf.rect(x+3, y+panelHeight-9, cornerSize, cornerSize, 'F');
+        // Bottom-right corner
+        pdf.rect(x+panelWidth-9, y+panelHeight-9, cornerSize, cornerSize, 'F');
         
         // Image
         const imageWidth = panelWidth - 6;
-        const imageHeight = 60;
+        const imageHeight = 70; // Increased from 60 to 70
         const imageX = x + 3;
         const imageY = y + 5;
         
@@ -901,16 +1071,16 @@ export const generateCuratedStoryPDF = async (
         
         // Text
         const textX = x + 3;
-        const textY = imageY + imageHeight + 10;
+        const textY = imageY + imageHeight + 8; // Reduced from 10 to 8
         const textWidth = panelWidth - 6;
-        const textHeight = panelHeight - (imageHeight + 15);
+        const textHeight = panelHeight - (imageHeight + 12); // Reduced from 15 to 12
         pdf.setFillColor(255, 255, 255);
         pdf.rect(textX, textY - 2, textWidth, textHeight, 'F');
-        pdf.setFontSize(12);
+        pdf.setFontSize(11); // Increased from 10 to 11 for better readability
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(0, 0, 0);
         const textLines = pdf.splitTextToSize(cleanText, textWidth - 4);
-        const lineHeight = 5;
+        const lineHeight = 4; // Reduced from 5 to 4
         const maxLines = Math.floor(textHeight / lineHeight);
         const displayLines = textLines.slice(0, maxLines);
         for (let lineIndex = 0; lineIndex < displayLines.length; lineIndex++) {

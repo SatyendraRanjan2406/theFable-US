@@ -301,16 +301,18 @@ const ComicBook: React.FC<ComicBookProps> = ({
         }
       }
       debugger
-      // Download and convert each image to base64
+      // Download and convert each image to base64 with better error handling
       const base64Images = await Promise.all(
         images.map(async (url, idx) => {
           if (!url) return null;
           try {
             console.log(`Processing image ${idx + 1} for PDF:`, url.includes('storymaker-jcool.s3.amazonaws.com') ? 'Using presigned URL' : 'Using original URL');
-            return await urlToBase64(url);
+            const base64 = await urlToBase64(url);
+            return base64;
           } catch (e) {
             console.error(`Failed to process image ${idx + 1}:`, e);
             console.log(`Image URL that failed: ${url}`);
+            // Return null instead of throwing to continue with other images
             return null;
           }
         })
