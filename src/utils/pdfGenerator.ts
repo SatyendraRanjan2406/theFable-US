@@ -226,14 +226,17 @@ export const generateComicPDF = async (
   pdf.setFillColor(255, 255, 255); // White background
   pdf.setDrawColor(200, 200, 200); // Light gray border
   pdf.setLineWidth(1);
-  pdf.roundedRect(textX - padding, textY - textHeight - padding/2, textWidth + padding*4, textHeight + padding, 8, 8, 'F');
-  pdf.roundedRect(textX - padding, textY - textHeight - padding/2, textWidth + padding*4, textHeight + padding, 8, 8);
+  // Position background to properly align behind the text
+  const bgX = textX + 15 - padding; // Align with text position
+  const bgY = textY - textHeight - padding/2; // Center vertically with text
+  pdf.roundedRect(bgX, bgY, textWidth + padding*2, textHeight + padding, 8, 8, 'F');
+  pdf.roundedRect(bgX, bgY, textWidth + padding*2, textHeight + padding, 8, 8);
   
   // Add the text
   pdf.text(poweredByText, textX+15, textY, { align: 'left' });
   
   // Add hyperlink to the text (opens in new tab)
-  pdf.link(textX - padding, textY - textHeight - padding/2, textWidth + padding*2, textHeight + padding, { url: `https://${import.meta.env.VITE_APP_DOMAIN || 'storymaker.jcool.in'}`, target: '_blank' });
+  pdf.link(bgX, bgY, textWidth + padding*2, textHeight + padding, { url: `https://${import.meta.env.VITE_APP_DOMAIN || 'storymaker.jcool.in'}`, target: '_blank' });
   
   // Now start the comic panels on a new page (no background)
   pdf.addPage();
@@ -687,8 +690,8 @@ export const generateCuratedStoryPDF = async (
   // Add title with title.png background frame
   const titleFrameWidth = pageWidth - 80; // Leave 90px margin on each side
   const titleFrameHeight = 70; // Height for title frame
-  const titleFrameX = 90; // X position (90px from left)
-  const titleFrameY = pageHeight / 2 + 20; // Y position below photo
+  const titleFrameX = 40; // X position (90px from left)
+  const titleFrameY = pageHeight / 2 + 40; // Y position below photo
   
   // Load and add title.png background with transparency
   try {
@@ -786,21 +789,24 @@ export const generateCuratedStoryPDF = async (
   const padding = 8; // Padding around text
   
   // Position at bottom right
-  const textX = pageWidth - textWidth - padding - 20; // 20px from right edge
+  const textX = pageWidth - textWidth - padding - 30; // 20px from right edge
   const textY = pageHeight - 2; // 2px from bottom - moved further down
   
   // Add white background with rounded corners
   pdf.setFillColor(255, 255, 255); // White background
   pdf.setDrawColor(200, 200, 200); // Light gray border
   pdf.setLineWidth(1);
-  pdf.roundedRect(textX - padding, textY - textHeight - padding/2-10, textWidth + padding*2, textHeight + padding, 8, 8, 'F');
-  pdf.roundedRect(textX - padding, textY - textHeight - padding/2-10, textWidth + padding*2, textHeight + padding, 8, 8);
+  // Position background to properly align behind the text
+  const bgX = textX + 15 - padding; // Align with text position
+  const bgY = textY - textHeight - padding/2; // Center vertically with text
+  pdf.roundedRect(bgX, bgY, textWidth + padding*2, textHeight + padding, 8, 8, 'F');
+  pdf.roundedRect(bgX, bgY, textWidth + padding*2, textHeight + padding, 8, 8);
   
   // Add the text
-  pdf.text(poweredByText, textX, textY, { align: 'left' });
+  pdf.text(poweredByText, textX+15, textY, { align: 'left' });
   
   // Add hyperlink to the text (opens in new tab)
-  pdf.link(textX - padding, textY - textHeight - padding/2, textWidth + padding*2, textHeight + padding, { url: `https://${import.meta.env.VITE_APP_DOMAIN || 'storymaker.jcool.in'}`, target: '_blank' });
+  pdf.link(bgX, bgY, textWidth + padding*2, textHeight + padding, { url: `https://${import.meta.env.VITE_APP_DOMAIN || 'storymaker.jcool.in'}`, target: '_blank' });
   
   // Start comic panels on new page
   pdf.addPage();
