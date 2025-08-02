@@ -686,6 +686,27 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
             photo_url: characterPhoto,
           });
           
+          // Set form data with story information (same as AI story flow)
+          setFormData((prev: any) => ({
+            ...prev,
+            characterName: characterName,
+            characterAge: storyData.age?.toString() || '',
+            characterGender: storyData.gender || '',
+            genre: storyData.genre || storyData.story_genre || 'adventure',
+            storyOutline: '', // We'll reconstruct this if needed
+          }));
+          
+          // Set existing photo URL for edit mode
+          setExising_photo_url(characterPhoto);
+          
+          console.log('🔍 Curated story form data populated:', {
+            characterName,
+            characterAge: storyData.age?.toString() || '',
+            characterGender: storyData.gender || '',
+            genre: storyData.genre || storyData.story_genre || 'adventure',
+            photo_url: characterPhoto
+          });
+          
           // Set payment status
           setIsPaid(storyData.is_paid || false);
           
@@ -1779,7 +1800,14 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
         <FinalCuratedPreview
           curatedStoryResult={curatedStoryResult}
           characterName={formData.characterName}
-          characterPhoto={getCharacterPhotoFromSessionStorage() || formData.selectedPhotoForStory || (formData.photo ? URL.createObjectURL(formData.photo) : null)}
+          characterPhoto={
+            // For edit mode, use photo_url from curatedStoryResult (panels API response)
+            // For create mode, use form data or session storage
+            curatedStoryResult?.photo_url || 
+            getCharacterPhotoFromSessionStorage() || 
+            formData.selectedPhotoForStory || 
+            (formData.photo ? URL.createObjectURL(formData.photo) : null)
+          }
           showBackButton={true}
           onBackToForm={handleBackToHome}
           onBackToCuratedForm={() => {

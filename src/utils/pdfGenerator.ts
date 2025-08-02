@@ -198,7 +198,7 @@ export const generateComicPDF = async (
   }
   
   // Perfect center text within title.png background
-  const lineHeight = titleFontSize + 2;
+  const lineHeight =10;
   const totalTextHeight = titleLines.length * lineHeight;
   const textStartY = titleFrameY + (titleBgHeight - totalTextHeight) / 2; // Perfect vertical center
   
@@ -685,8 +685,8 @@ export const generateCuratedStoryPDF = async (
   }
   
   // Add title with title.png background frame
-  const titleFrameWidth = pageWidth - 180; // Leave 90px margin on each side
-  const titleFrameHeight = 40; // Height for title frame
+  const titleFrameWidth = pageWidth - 80; // Leave 90px margin on each side
+  const titleFrameHeight = 70; // Height for title frame
   const titleFrameX = 90; // X position (90px from left)
   const titleFrameY = pageHeight / 2 + 20; // Y position below photo
   
@@ -759,13 +759,13 @@ export const generateCuratedStoryPDF = async (
   
   // Adjust font size if text is too long
   if (titleLines.length > 2) {
-    titleFontSize = Math.min(35, Math.floor(titleBgHeight * 0.35));
+    titleFontSize = Math.min(38, Math.floor(titleBgHeight * 0.45));
     pdf.setFontSize(titleFontSize);
     titleLines = pdf.splitTextToSize(displayTitle, textAreaWidth);
   }
   
   // Perfect center text within title.png background
-  const lineHeight = titleFontSize + 2;
+  const lineHeight = 10;
   const totalTextHeight = titleLines.length * lineHeight;
   const textStartY = titleFrameY + (titleBgHeight - totalTextHeight) / 2; // Perfect vertical center
   
