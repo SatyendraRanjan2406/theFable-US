@@ -12,25 +12,34 @@ export const buildStoryPrompt = (request: StoryRequest): string => {
   The story should be a ${request.genre}. The reference table for story creation depeding on ${request.characterAge} and ${request.genre}  will result in corresponding 
   [Author Style] and [Style Notes] referring the following tabel . 
   Use this reference mapping:
+The rules for creating the story are as follows:
+If the story outline is provided, use it to create the story and keep the ouline as the theme of the story , with the following rules , else if the story outline is not provided, then build a story based on the genre and age group and the following rules:
+** RULES FOR STORY CREATION **
+If the genre is Adventure and the age group is 4–6, the story should follow the style of Julia Donaldson (The Gruffalo) and be rhythmic, rhyme-based, vivid, friendly, and follow a simple story structure.
 
-| Genre     | Age Group | Author Style                             | Style Notes                                                                 |
-|-----------|-----------|-------------------------------------------|------------------------------------------------------------------------------|
-| Adventure | 4-6       | Julia Donaldson (The Gruffalo)           | Rhythmic, rhyme-based, vivid, friendly, simple story structure.             |
-| Adventure | 7-9       | Enid Blyton (Famous Five)                | Light suspense, teamwork, classic adventure, accessible language.           |
-| Adventure | 10-18     | Rick Riordan (Percy Jackson tone-down)   | Myth-inspired, action-packed, humor, modern references simplified.          |
-| Mystery   | 4-6       | Dr. Seuss (with mystery twist)           | Rhyming clues, playful mystery, colorful resolution, engaging rhythm.       |
-| Mystery   | 7-9       | Enid Blyton (Secret Seven)               | Gentle mysteries, group problem-solving, safe suspense, easy vocabulary.    |
-| Mystery   | 10-18     | Lemony Snicket (Unfortunate Events lite) | Whimsical dark humor, mysterious atmosphere, rich yet accessible vocabulary.|
-| Fairytale | 4-6       | Beatrix Potter (Peter Rabbit)            | Gentle fables, talking animals, moral themes, simple language.              |
-| Fairytale | 7-9       | Brothers Grimm (Softened version)        | Traditional fairytales, simplified plots, reduced dark elements.            |
-| Fairytale | 10-18     | C.S. Lewis (Narnia tone)                 | Epic world-building, fantasy-driven, deeper themes, adventurous elements.   |
-| Humor     | 4-6       | Mo Willems (Elephant & Piggie)           | Repetitive humor, silly scenarios, expressive, engaging dialogue.           |
-| Humor     | 7-9       | Roald Dahl (Matilda/Charlie)             | Whimsical, quirky characters, absurd humor, moral undertone, easy narrative.|
-| Humor     | 10-18     | Jeff Kinney (Diary of a Wimpy Kid)       | Light sarcasm, relatable humor, school-life scenarios, accessible tone.     |
+If the genre is Adventure and the age group is 7–9, the story should reflect the tone of Enid Blyton (Famous Five) and include light suspense, teamwork, classic adventure elements, and accessible language.
 
-  
+If the genre is Adventure and the age group is 10–18, the story should adopt a toned-down Rick Riordan style (Percy Jackson) and be myth-inspired, action-packed, humorous, with simplified modern references.
+
+If the genre is Mystery and the age group is 4–6, the story should be written in the spirit of Dr. Seuss with a mystery twist, using rhyming clues, a playful tone, colorful resolutions, and an engaging rhythm.
+
+If the genre is Mystery and the age group is 7–9, the story should mimic Enid Blyton’s Secret Seven, featuring gentle mysteries, group problem-solving, safe suspense, and easy vocabulary.
+
+If the genre is Mystery and the age group is 10–18, the story should resemble a light version of Lemony Snicket’s A Series of Unfortunate Events, with whimsical dark humor, a mysterious atmosphere, and rich yet accessible vocabulary.
+
+If the genre is Fairytale and the age group is 4–6, the story should be in the style of Beatrix Potter (Peter Rabbit), featuring gentle fables, talking animals, moral themes, and simple language.
+
+If the genre is Fairytale and the age group is 7–9, the story should take inspiration from softened versions of Brothers Grimm stories, with traditional fairytales, simplified plots, and reduced dark elements.
+
+If the genre is Fairytale and the age group is 10–18, the story should be modeled after C. S. Lewis’s Narnia series, focusing on epic world-building, fantasy-driven plots, deeper themes, and adventurous elements.
+
+If the genre is Humor and the age group is 4–6, the story should follow the tone of Mo Willems (Elephant & Piggie) with repetitive humor, silly scenarios, expressive narration, and engaging dialogue.
+
+If the genre is Humor and the age group is 7–9, the story should be inspired by Roald Dahl’s style (Matilda, Charlie and the Chocolate Factory), with whimsical and quirky characters, absurd humor, a moral undertone, and an easy narrative.
+
+If the genre is Humor and the age group is 10–18, the story should resemble Jeff Kinney’s Diary of a Wimpy Kid, using light sarcasm, relatable humor, school-life scenarios, and an accessible tone.
 The story should be in the style of [Author Name]. The story should be [Style Notes]
-
+** END OF RULES FOR STORY CREATION **
 
 Example Input:  
 **Genre:** Mystery  
