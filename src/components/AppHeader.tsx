@@ -32,8 +32,36 @@ export const SAMPLE_PDFS = [
   }
 ];
 
+export const SAMPLE_PDFS_US = [
+  {
+    name: "Josh's Mystery",
+    url: "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/SYSTEM_ASSET/Josh-mystery-comic-fullscreen.pdf",
+    description: "See Josh and the secret of starlit!",
+    character: "Josh"
+  },
+  {
+    name: "Kiara's Adventure",
+    url: "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/SYSTEM_ASSET/kiara-adventure-comic-split.pdf",
+    description: "See Kiara and the quest for hidden treasure!",
+    character: "Kiara"
+  }
+];
+
+
 const AppHeader: React.FC<AppHeaderProps> = ({ currentStep, onCreateStoryClick, onStorySelect, onMenuToggle }) => {
   const formRef = useRef<HTMLDivElement>(null);
+
+  // Determine which PDFs to use based on domain
+  const getSamplePdfs = () => {
+    const hostname = window.location.hostname;
+    if (hostname === 'thefable.app') {
+      return SAMPLE_PDFS_US;
+    }
+    // Default to SAMPLE_PDFS for storymaker.jcool.in and other domains
+    return SAMPLE_PDFS;
+  };
+
+  const currentSamplePdfs = getSamplePdfs();
 
   const handleCreateStoryClick = () => {
     // Track the story creation start event
@@ -242,7 +270,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ currentStep, onCreateStoryClick, 
                 <div className="flex-1">
                   <p className="text-blue-600 animate-pulse font-bold">Download sample books to see the magic</p>
                   <div className="flex gap-2 mt-1">
-                    {SAMPLE_PDFS.map((pdf, index) => (
+                    {currentSamplePdfs.map((pdf, index) => (
                       <a
                         key={index}
                         href={pdf.url}

@@ -5,108 +5,127 @@ import { getPronouns, getAgeGroup } from './storyHelpers';
 export const buildStoryPrompt = (request: StoryRequest): string => {
   const pronouns = getPronouns(request.characterGender);
   const ageGroup = getAgeGroup(request.characterAge);
+  const style = getStyleReference(request.genre, request.characterAge);
   const customOutline = request.storyOutline ? `\n\nSTORY OUTLINE TO FOLLOW EXACTLY:\n${request.storyOutline}` : '';
   const moralMessage = request.message ? `\n\nIMPORTANT MORAL LESSON TO WEAVE THROUGHOUT:\n"${request.message}" - This should be naturally integrated into the story's events and character growth.` : '';
 
-  return `You are creating a ${request.pages}-page comic book story for ${request.characterName} and age group ${ageGroup}, a ${request.characterAge}-year-old ${request.characterGender}.
-  The story should be a ${request.genre}. The reference table for story creation depeding on ${request.characterAge} and ${request.genre}  will result in corresponding 
-  [Author Style] and [Style Notes] referring the following tabel . 
-  Use this reference mapping:
-The rules for creating the story are as follows:
-If the story outline is provided, use it to create the story and keep the ouline as the theme of the story , with the following rules , else if the story outline is not provided, then build a story based on the genre and age group and the following rules:
-** RULES FOR STORY CREATION **
-If the genre is Adventure and the age group is 4–6, the story should follow the style of Julia Donaldson (The Gruffalo) and be rhythmic, rhyme-based, vivid, friendly, and follow a simple story structure.
+  return `You are creating a ${request.pages}-page comic book story for ${request.characterName}, a ${request.characterAge}-year-old ${request.characterGender} in the ${ageGroup} age group.
+The story should be a ${request.genre}.
 
-If the genre is Adventure and the age group is 7–9, the story should reflect the tone of Enid Blyton (Famous Five) and include light suspense, teamwork, classic adventure elements, and accessible language.
+📘 CHARACTER DETAILS:
+• Name: ${request.characterName}
+• Age: ${request.characterAge} years old (Age Group: ${ageGroup})
+• Gender: ${request.characterGender}
+• Pronouns: ${pronouns.subject}/${pronouns.object}/${pronouns.possessive}
+• Personality: Curious, brave, kind, and age-appropriately determined
 
-If the genre is Adventure and the age group is 10–18, the story should adopt a toned-down Rick Riordan style (Percy Jackson) and be myth-inspired, action-packed, humorous, with simplified modern references.
+📚 AUTHOR STYLE & TONE GUIDANCE:
+*Genre:* ${request.genre}
+*Age:* ${request.characterAge} (age group: ${ageGroup})
+🎨 *Author Style:* ${style.author}
+📝 *Tone & Style Notes:* ${style.notes}
+📖 *Reference Book Example:* "${style.book}"
+Use this as a tone and rhythm reference — match the spirit, pacing, and emotional feel of the example book, but do not copy the plot or characters.
 
-If the genre is Mystery and the age group is 4–6, the story should be written in the spirit of Dr. Seuss with a mystery twist, using rhyming clues, a playful tone, colorful resolutions, and an engaging rhythm.
-
-If the genre is Mystery and the age group is 7–9, the story should mimic Enid Blyton’s Secret Seven, featuring gentle mysteries, group problem-solving, safe suspense, and easy vocabulary.
-
-If the genre is Mystery and the age group is 10–18, the story should resemble a light version of Lemony Snicket’s A Series of Unfortunate Events, with whimsical dark humor, a mysterious atmosphere, and rich yet accessible vocabulary.
-
-If the genre is Fairytale and the age group is 4–6, the story should be in the style of Beatrix Potter (Peter Rabbit), featuring gentle fables, talking animals, moral themes, and simple language.
-
-If the genre is Fairytale and the age group is 7–9, the story should take inspiration from softened versions of Brothers Grimm stories, with traditional fairytales, simplified plots, and reduced dark elements.
-
-If the genre is Fairytale and the age group is 10–18, the story should be modeled after C. S. Lewis’s Narnia series, focusing on epic world-building, fantasy-driven plots, deeper themes, and adventurous elements.
-
-If the genre is Humor and the age group is 4–6, the story should follow the tone of Mo Willems (Elephant & Piggie) with repetitive humor, silly scenarios, expressive narration, and engaging dialogue.
-
-If the genre is Humor and the age group is 7–9, the story should be inspired by Roald Dahl’s style (Matilda, Charlie and the Chocolate Factory), with whimsical and quirky characters, absurd humor, a moral undertone, and an easy narrative.
-
-If the genre is Humor and the age group is 10–18, the story should resemble Jeff Kinney’s Diary of a Wimpy Kid, using light sarcasm, relatable humor, school-life scenarios, and an accessible tone.
-The story should be in the style of [Author Name]. The story should be [Style Notes]
-** END OF RULES FOR STORY CREATION **
-
-Example Input:  
-**Genre:** Mystery  
-**Age Group:** 7 - 9  
-
-Expected Output:  
-Write a story in the style of *Enid Blyton's Secret Seven* with group problem-solving, gentle suspense, and simple vocabulary.
-
-If the ${request.storyOutline} and ${request.message} is filled that should be used to create the story.
-The story should set the scene, introduce a conflict, raise the stakes, reach a climax and resolve and reflect
-
-
-CRITICAL STORY REQUIREMENTS:
-1. CLEAR NARRATIVE FLOW: Each panel must logically connect to the next
+💡 CRITICAL STORY REQUIREMENTS:
+1. CLEAR NARRATIVE FLOW: Each panel must logically connect to the next (Intro → Conflict → Challenge → Climax → Resolution)
 2. SIMPLE, ENGAGING TEXT: Use age-appropriate language that flows naturally
 3. CONSISTENT CHARACTER: ${request.characterName} should act consistently throughout
 4. LOGICAL PROGRESSION: Each page should build on the previous one
 5. COMPLETE STORY ARC: Clear beginning, middle, and satisfying end
-6. When the new character is introduced in the story, create a visual description of the character and the setting and use it in every panel where the character is present.
+6. VISUAL INTRODUCTIONS: When a new character is introduced, create a clear visual description and use it consistently in all relevant panels
 
-MANDATORY STORY STRUCTURE:
-${getSimpleStoryStructure(request.pages, request.characterName, pronouns, request.genre)}
+📖 MANDATORY STORY STRUCTURE:
+${getLongFlowStructure(request.pages, request.characterName, pronouns)}
 
-STRICT FORMATTING RULES:
-- Start each page with: **Page X**
-- Start each panel with: **Panel 1:** or **Panel 2:**
-- Separate pages with: ---
-- Each panel format: *[Clear visual description]* followed by story text and dialogue
-- Keep visual descriptions focused and specific
-- Make story text natural and conversational
-ENHANCED PANEL FORMAT EXAMPLE:
-**Panel 1:** *${request.characterName} sits in ${pronouns.possessive} bedroom, sunlight streaming through the window. ${pronouns.subject.charAt(0).toUpperCase() + pronouns.subject.slice(1)} looks excited and ready for adventure.* 
+✍️ STRICT FORMATTING RULES:
+• Start each page with: *Page X*
+• Start each panel with: *Panel 1:* or *Panel 2:*
+• Separate pages with: ---
+• Each panel format: [Clear visual description] followed by story text and dialogue
+• Make story text natural and conversational
+
+🎨 ENHANCED PANEL FORMAT EXAMPLE:
+*Panel 1:* ${request.characterName} sits in ${pronouns.possessive} bedroom, sunlight streaming through the window. ${pronouns.subject.charAt(0).toUpperCase() + pronouns.subject.slice(1)} looks excited and ready for adventure.
 
 ${request.characterName} jumps out of bed with a big smile. "Today feels special!" ${pronouns.subject} says happily. "I wonder what amazing things will happen!"
 
-CHARACTER CONSISTENCY:
-- Name: Always use "${request.characterName}" exactly
-- Age: ${request.characterAge} years old - dialogue must match this age
-- Pronouns: ${pronouns.subject}/${pronouns.object}/${pronouns.possessive}
-- Personality: Curious, brave, kind, and age-appropriately determined
+💬 DIALOGUE RULES:
+• Sound like a real ${request.characterAge}-year-old talking
+• Keep sentences short, natural, and expressive
+• Show the character’s personality through speech
+• Include emotional reactions (e.g., surprise, joy, nervousness)
+• Avoid overly complex sentence structures or adult phrasing
 
-STORY FLOW REQUIREMENTS:
-✓ Each panel connects logically to the next
-✓ Story builds momentum from page to page
-✓ Character actions have clear motivations
-✓ Dialogue sounds natural for a ${request.characterAge}-year-old
-✓ Clear cause-and-effect relationships
-✓ Satisfying resolution that ties everything together
-✓ Simple, engaging language throughout
+🖼️ VISUAL DESCRIPTION GUIDELINES:
+• Focus on emotions, actions, and setting details
+• Show the main character’s expressions clearly
+• Describe any new character visually before they speak
+• Indicate time of day, place, or action cues (e.g., shadows, wind, glowing objects)
+• Avoid generic phrases like "beautiful room" or "strange place" — be specific and child-friendly
 
-VISUAL DESCRIPTION GUIDELINES:
-- Keep descriptions clear and focused
-- Describe main character's expressions and actions
-- Include important setting details
-- Show emotions through character body language
-- Make scenes easy to visualize
-- Avoid overly complex descriptions
-- for each of the new character introduced in the story, create a visual description of the character in the beginning of the story and the setting and use it in every panel  where the character is present as part of the panel text.
+${customOutline}${moralMessage}
 
-DIALOGUE RULES:
-- Sound like a real ${request.characterAge}-year-old talking
-- Keep sentences simple and clear
-- Show character's personality through speech
-- Include natural reactions and emotions
-- Make conversations flow naturally ${customOutline}${moralMessage}
+✨ CREATE A FLOWING, ENGAGING STORY where each panel clearly leads to the next, and the entire comic makes perfect sense when read from start to finish. 
+Be imaginative, thoughtful, and aligned to the tone and rhythm of the referenced book.
+Use the following reference table to select author style and tone based on age and genre:
 
-CREATE A FLOWING, ENGAGING STORY where each panel clearly leads to the next and the entire story makes perfect sense when read from start to finish.`;
+Age Group: 4–6
+- Adventure → Julia Donaldson
+  Style: Rhyming, vivid imagery, friendly tone, simple arcs
+  Example: The Gruffalo
+- Mystery → Dr. Seuss (mystery)
+  Style: Rhyming clues, playful tone, colorful, rhythmic storytelling
+  Example: Green Eggs and Ham (tone/style ref)
+- Fairytale → Beatrix Potter
+  Style: Talking animals, moral lessons, soft narration
+  Example: The Tale of Peter Rabbit
+- Humor → Mo Willems
+  Style: Silly, repetitive humor, strong expressions, interactive feel
+  Example: Elephant & Piggie series
+
+Age Group: 7–9
+- Adventure → Enid Blyton
+  Style: Classic adventure tone, group teamwork, safe suspense
+  Example: Famous Five
+- Mystery → Enid Blyton
+  Style: Gentle mysteries, clue-based progression, friendly feel
+  Example: Secret Seven
+- Fairytale → Brothers Grimm (soft)
+  Style: Simplified fairytales, moral outcomes, imaginative twists
+  Example: Hansel and Gretel (simplified)
+- Humor → Roald Dahl
+  Style: Quirky, absurd humor, playful narration, often a moral
+  Example: Charlie and the Chocolate Factory
+
+Age Group: 10–12
+- Adventure → Rick Riordan (lite)
+  Style: Mythology-inspired, action-driven, witty, simplified cultural references
+  Example: Percy Jackson
+- Mystery → Lemony Snicket (light)
+  Style: Whimsical dark humor, mysterious atmosphere, clever narration
+  Example: A Series of Unfortunate Events
+- Fairytale → C. S. Lewis
+  Style: Fantasy epic, values-based, world-building, moral decisions
+  Example: Chronicles of Narnia
+- Humor → Jeff Kinney
+  Style: Diary-style, sarcasm, relatable school-life humor
+  Example: Diary of a Wimpy Kid
+
+Age Group: 13–18
+- Adventure → Rick Riordan (lite)
+  Style: Bolder action, mythic scale, personal growth arcs
+  Example: Heroes of Olympus
+- Mystery → Lemony Snicket (light)
+  Style: More intrigue, dramatic narration, complex vocabulary
+  Example: A Series of Unfortunate Events
+- Fairytale → C. S. Lewis
+  Style: Deep themes, symbolism, layered world-building
+  Example: The Magician’s Nephew
+- Humor → Jeff Kinney
+  Style: Light sarcasm, teen dilemmas, emotional humor
+  Example: Diary of a Wimpy Kid: The Ugly Truth
+`;
 };
 
 const getSimpleStoryStructure = (pages: number, characterName: string, pronouns: Pronouns, genre: string): string => {
