@@ -26,10 +26,11 @@ import LoginModal from '@/components/LoginModal';
 import { useAuth } from '@/hooks/useAuth';
 import Footer from '@/components/Footer';
 
-import { trackPhotosRegenerated, trackStoryRegenerated } from '@/utils/gtm';
+import { trackPhotosRegenerated, trackStoryRegenerated, trackStoryTemplateSelected } from '@/utils/gtm';
 import { SAMPLE_PDFS } from '@/components/AppHeader';
 import { BASE_URL } from '@/config/api';
 import { APP_CONFIG, getCarouselImages } from '@/config/app';
+import { getSamplePdfs } from '@/utils/domainUtils';
 
 
 // Carousel images for hero section - configurable from environment variables
@@ -122,10 +123,18 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
   const [curatedStoryForEdit, setCuratedStoryForEdit] = useState<any>(null);
   const storyFormRef = useRef<HTMLDivElement>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [samplePdfs, setSamplePdfs] = useState(SAMPLE_PDFS); // Default to SAMPLE_PDFS
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
   
+
+  useEffect(() => {
+    getSamplePdfs().then((pdfs) => {
+      setSamplePdfs(pdfs);
+    });
+  }, []);
+
   // Determine if we're in edit mode or create mode
   // Edit mode: URL contains editStoryId query parameter
   // Create mode: URL does not contain editStoryId query parameter
@@ -875,6 +884,9 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
   };
 
   const handleHomePageCuratedStorySelect = (story: any) => {
+    // Track curated story template selection from homepage
+    trackStoryTemplateSelected(`homepage_${story.slug || story.title}`);
+    
     // Store the full story object for the curated form
     setSelectedCuratedStoryForForm(story);
     setShowStoryCreation(true);
@@ -2049,7 +2061,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
             <div className="mt-6 text-left">
               <p className="text-sm text-[#555555] mb-3">Want to see examples? Download sample stories:</p>
               <div className="flex flex-col sm:flex-row gap-3 justify-start items-start">
-                {SAMPLE_PDFS.map((pdf, index) => (
+                {samplePdfs.map((pdf, index) => (
                   <a
                     key={index}
                     href={pdf.url}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import CharacterDetailsForm from './CharacterDetailsForm';
 import PhotoUploadField from './PhotoUploadField';
 import { toast } from 'sonner';
+import { trackStoryCreationStarted, trackStoryCustomized } from '@/utils/gtm';
 
 interface CuratedStory {
   id: string;
@@ -96,9 +97,18 @@ const CuratedStoryForm: React.FC<CuratedStoryFormProps> = ({
         return;
       }
       
+      // Track curated story creation started
+      trackStoryCreationStarted('curated_story_form');
+      
       // Call the curated story generation API
       onGenerateStory();
     }
+  };
+
+  const handleStorySelect = (story: CuratedStory) => {
+    // Track story customization when user selects a curated story
+    trackStoryCustomized('curated_story_selected');
+    onStorySelect(story);
   };
 
   return (
@@ -168,7 +178,7 @@ const CuratedStoryForm: React.FC<CuratedStoryFormProps> = ({
                       ? 'border-orange-500 bg-orange-50 shadow-xl scale-105 ring-2 ring-orange-200'
                       : 'border-gray-200 hover:border-orange-300 hover:shadow-md'
                   }`}
-                  onClick={() => onStorySelect(story)}
+                  onClick={() => handleStorySelect(story)}
                 >
                   {/* Story Thumbnail */}
                   <div className="w-full h-32 rounded-lg overflow-hidden bg-gradient-to-br from-purple-200 to-pink-200 flex items-center justify-center mb-3">

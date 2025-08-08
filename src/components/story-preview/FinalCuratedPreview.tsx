@@ -7,7 +7,7 @@ import { regenerateCuratedPanel } from '@/utils/curatedStoryApi';
 import ComicBook from '@/components/ComicBook';
 import StoryActions from '@/components/StoryActions';
 import PricingModal from '@/components/PricingModal';
-import { trackCheckoutStarted, trackPurchaseCompleted } from '@/utils/gtm';
+import { trackCheckoutStarted, trackPurchaseCompleted, trackStoryRegenerated, trackStoryCustomized, trackDownloadPDFButtonClicked } from '@/utils/gtm';
 import { generateCuratedStoryPDF } from '@/utils/pdfGenerator';
 
 interface CuratedPanel {
@@ -78,6 +78,13 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
     curatedStoryResult.photo_url || 
     curatedStoryResult.story_id
   );
+  
+  // Track story customization when in edit mode
+  useEffect(() => {
+    if (isEditMode) {
+      trackStoryCustomized('curated_story_edit_mode');
+    }
+  }, [isEditMode]);
   
   // Get character information based on mode
   const displayCharacterName = isEditMode 
@@ -336,6 +343,9 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
     }
     
     try {
+      // Track PDF download for curated stories
+      trackDownloadPDFButtonClicked('curated_story_pdf_download');
+      
       toast.info('Preparing PDF for curated story...');
       
       // Extract data directly from panels array - this is the source of truth
@@ -383,6 +393,9 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
     setErrorImages(prev => ({ ...prev, [index]: false }));
     
     try {
+      // Track story regeneration for curated stories
+      trackStoryRegenerated('curated_story_panel_regeneration');
+      
       const result = await regenerateCuratedPanel(panel.panel_id || panel.id);
       console.log('Panel regeneration result:', result);
 

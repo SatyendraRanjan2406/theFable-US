@@ -1,6 +1,6 @@
 
 import { StoryRequest, Pronouns } from '../types/storyTypes';
-import { getPronouns, getAgeGroup } from './storyHelpers';
+import { getPronouns, getAgeGroup, getStyleReference } from './storyHelpers';
 
 export const buildStoryPrompt = (request: StoryRequest): string => {
   const pronouns = getPronouns(request.characterGender);
@@ -20,10 +20,10 @@ The story should be a ${request.genre}.
 • Personality: Curious, brave, kind, and age-appropriately determined
 
 📚 AUTHOR STYLE & TONE GUIDANCE:
-*Genre:* ${request.genre}
-*Age:* ${request.characterAge} (age group: ${ageGroup})
-🎨 *Author Style:* ${style.author}
-📝 *Tone & Style Notes:* ${style.notes}
+**Genre:** ${request.genre}
+**Age:** ${request.characterAge} (age group: ${ageGroup})
+🎨 **Author Style:** ${style.author}
+📝 **Tone & Style Notes:** ${style.notes}
 📖 *Reference Book Example:* "${style.book}"
 Use this as a tone and rhythm reference — match the spirit, pacing, and emotional feel of the example book, but do not copy the plot or characters.
 
@@ -39,14 +39,14 @@ Use this as a tone and rhythm reference — match the spirit, pacing, and emotio
 ${getLongFlowStructure(request.pages, request.characterName, pronouns)}
 
 ✍️ STRICT FORMATTING RULES:
-• Start each page with: *Page X*
-• Start each panel with: *Panel 1:* or *Panel 2:*
+• Start each page with: **Page X**
+• Start each panel with: **Panel 1:** or **Panel 2:**
 • Separate pages with: ---
-• Each panel format: [Clear visual description] followed by story text and dialogue
+• Each panel format: *[Clear visual description]** followed by story text and dialogue
 • Make story text natural and conversational
 
 🎨 ENHANCED PANEL FORMAT EXAMPLE:
-*Panel 1:* ${request.characterName} sits in ${pronouns.possessive} bedroom, sunlight streaming through the window. ${pronouns.subject.charAt(0).toUpperCase() + pronouns.subject.slice(1)} looks excited and ready for adventure.
+**Panel 1:** *${request.characterName} sits in ${pronouns.possessive} bedroom, sunlight streaming through the window. ${pronouns.subject.charAt(0).toUpperCase() + pronouns.subject.slice(1)} looks excited and ready for adventure.*
 
 ${request.characterName} jumps out of bed with a big smile. "Today feels special!" ${pronouns.subject} says happily. "I wonder what amazing things will happen!"
 

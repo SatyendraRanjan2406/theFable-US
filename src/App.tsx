@@ -23,6 +23,7 @@ import { ContactProvider } from "./context/ContactContext";
 import { useAuth } from "@/hooks/useAuth";
 import LoginModal from "@/components/LoginModal";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import { trackPageView } from "@/utils/gtm";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,40 @@ export const App = () => {
   useEffect(() => {
     setIsSidePanelOpen(false);
   }, [location]);
+
+  // Track page views for SPA navigation
+  useEffect(() => {
+    const pageTitle = getPageTitle(location.pathname);
+    trackPageView(location.pathname, pageTitle);
+  }, [location.pathname]);
+
+  const getPageTitle = (pathname: string): string => {
+    switch (pathname) {
+      case '/':
+        return 'Home - StoryMaker';
+      case '/dashboard':
+        return 'Dashboard - StoryMaker';
+      case '/stories-history':
+        return 'Stories History - StoryMaker';
+      case '/payments':
+        return 'Payments - StoryMaker';
+      case '/payment-success':
+        return 'Payment Success - StoryMaker';
+      case '/payment-refund-policy':
+        return 'Payment Refund Policy - StoryMaker';
+      case '/privacy':
+        return 'Privacy Policy - StoryMaker';
+      case '/terms':
+        return 'Terms & Conditions - StoryMaker';
+      case '/oauth/callback':
+        return 'OAuth Callback - StoryMaker';
+      default:
+        if (pathname.startsWith('/story/')) {
+          return 'Story Details - StoryMaker';
+        }
+        return 'StoryMaker';
+    }
+  };
 
   const handleLoginClick = () => setIsLoginModalOpen(true);
   const handleLoginSuccess = () => {
