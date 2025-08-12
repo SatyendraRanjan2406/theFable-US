@@ -27,11 +27,25 @@ interface CuratedPanel {
 }
 
 interface CuratedStoryResult {
+  // Story object containing all story-related properties
+  story?: {
+    id: string;
+    title: string;
+    genre: string;
+    front_page_img_url_portrait: string;
+    back_page_image_url: string;
+    character_name: string;
+    character_age: number;
+    character_gender: string;
+    photo_url?: string;
+    story_content?: string;
+    [key: string]: any;
+  };
+  // Story metadata
   story_id?: string;
-  story_content?: string;
+  // Panels data
   panels?: CuratedPanel[];
-  title?: string;
-  genre?: string;
+  // Additional fields for backward compatibility
   [key: string]: any;
 }
 
@@ -60,10 +74,41 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
   onPaymentSuccess,
   onPaymentCancellation
 }) => {
+  // Helper function to normalize curatedStoryResult structure for consistency
+  const normalizeCuratedStoryResult = (data: any): CuratedStoryResult => {
+    // If data already has the story structure, return as is
+    if (data.story && typeof data.story === 'object') {
+      return data;
+    }
+    
+    // Normalize data to have consistent story structure
+    return {
+      story: {
+        id: data.id || data.story_id || '',
+        title: data.title || `${characterName}'s Curated Story`,
+        genre: data.genre || 'adventure',
+        front_page_img_url_portrait: data.front_page_img_url_portrait || '',
+        back_page_image_url: data.back_page_image_url || '',
+        character_name: data.character_name || characterName,
+        character_age: data.character_age || 8,
+        character_gender: data.character_gender || 'unknown',
+        photo_url: data.photo_url || characterPhoto,
+        story_content: data.story_content || '',
+        ...data
+      },
+      story_id: data.story_id || data.id,
+      panels: data.panels || [],
+      ...data
+    };
+  };
+
+  // Normalize the curatedStoryResult to ensure consistent structure
+  const normalizedResult = normalizeCuratedStoryResult(curatedStoryResult);
+
   const [regeneratingPanels, setRegeneratingPanels] = useState<{ [key: number]: boolean }>({});
   const [errorImages, setErrorImages] = useState<{ [key: number]: boolean }>({});
   const [retryLoadingPanels, setRetryLoadingPanels] = useState<{ [key: number]: boolean }>({});
-  const [panels, setPanels] = useState<CuratedPanel[]>(curatedStoryResult.panels || []);
+  const [panels, setPanels] = useState<CuratedPanel[]>(normalizedResult.panels || []);
   const [images, setImages] = useState<(string | null)[]>([]);
   const [lockedPanels, setLockedPanels] = useState<boolean[]>([]);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
@@ -73,10 +118,10 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
   const [localIsPaid, setLocalIsPaid] = useState(isPaid);
 
   // Determine if we're in edit mode or create mode
-  const isEditMode = curatedStoryResult && (
-    curatedStoryResult.character_name || 
-    curatedStoryResult.photo_url || 
-    curatedStoryResult.story_id
+  const isEditMode = normalizedResult && (
+    normalizedResult.story?.character_name || 
+    normalizedResult.story?.photo_url || 
+    normalizedResult.story_id
   );
   
   // Track story customization when in edit mode
@@ -88,18 +133,18 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
   
   // Get character information based on mode
   const displayCharacterName = isEditMode 
-    ? (curatedStoryResult?.character_name || characterName)
+    ? (normalizedResult?.story?.character_name || characterName)
     : characterName;
     
   const displayCharacterPhoto = isEditMode 
-    ? (curatedStoryResult?.photo_url || characterPhoto)
+    ? (normalizedResult?.story?.photo_url || characterPhoto)
     : characterPhoto;
   
   console.log('🎭 FinalCuratedPreview Mode Detection:', {
     isEditMode,
-    curatedStoryResult_has_character_name: !!curatedStoryResult?.character_name,
-    curatedStoryResult_has_photo_url: !!curatedStoryResult?.photo_url,
-    curatedStoryResult_has_story_id: !!curatedStoryResult?.story_id,
+    curatedStoryResult_has_character_name: !!normalizedResult?.story?.character_name,
+    curatedStoryResult_has_photo_url: !!normalizedResult?.story?.photo_url,
+    curatedStoryResult_has_story_id: !!normalizedResult?.story_id,
     displayCharacterName,
     displayCharacterPhoto,
     props_characterName: characterName,
@@ -107,7 +152,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
   });
   
   // Early return if curatedStoryResult is not available
-  if (!curatedStoryResult || typeof curatedStoryResult !== 'object') {
+  if (!normalizedResult || typeof normalizedResult !== 'object') {
     console.log('❌ FinalCuratedPreview: curatedStoryResult is undefined or invalid, showing loading state');
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
@@ -138,18 +183,18 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
 
   // Initialize images and locked panels from curated story result
   useEffect(() => {
-    if (!curatedStoryResult || typeof curatedStoryResult !== 'object') {
-      console.log('❌ curatedStoryResult is undefined or invalid');
+    if (!normalizedResult || typeof normalizedResult !== 'object') {
+      console.log('❌ normalizedResult is undefined or invalid');
       return;
     }
     
-    if (curatedStoryResult?.panels) {
-      console.log('🔍 Original curatedStoryResult:', curatedStoryResult);
-      console.log('🔍 Original panels data:', curatedStoryResult.panels);
+    if (normalizedResult?.panels) {
+      console.log('🔍 Original normalizedResult:', normalizedResult);
+      console.log('🔍 Original panels data:', normalizedResult.panels);
       
       // Debug original panel data before mapping
       console.log('🔍 Original Panel Data Before Mapping:');
-      curatedStoryResult.panels.forEach((panel, index) => {
+      normalizedResult.panels.forEach((panel, index) => {
         console.log(`Original Panel ${index + 1}:`, {
           panel_id: panel.panel_id,
           panel_number: panel.panel_number,
@@ -160,14 +205,22 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
         });
       });
       
-      // Extract all panel texts from story content to ensure we have all 8 panels
-      const extractedPanelTexts = extractPanelsFromStory(curatedStoryResult?.story_content || '');
+      // Extract all panel texts from story content to ensure we have all panels
+      const extractedPanelTexts = extractPanelsFromStory(normalizedResult?.story?.story_content || '');
       console.log('🔍 Extracted panel texts from story:', extractedPanelTexts);
       
-      // Create a complete panel array with all 8 panels (index 0-7)
+      // Determine the total number of panels dynamically
+      const totalPanels = Math.max(
+        normalizedResult.panels.length,
+        extractedPanelTexts.length,
+        8 // Minimum fallback
+      );
+      console.log('🔍 Total panels to create:', totalPanels);
+      
+      // Create a complete panel array with all panels dynamically
       const completePanels = [];
-      for (let i = 0; i < 8; i++) {
-        const existingPanel = curatedStoryResult.panels.find(p => p.panel_number === i);
+      for (let i = 0; i < totalPanels; i++) {
+        const existingPanel = normalizedResult.panels.find(p => p.panel_number === i);
         const extractedText = extractedPanelTexts[i] || '';
         
         if (existingPanel) {
@@ -205,7 +258,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
         }
       }
       
-      console.log('🔍 Complete panels array (all 8):', completePanels);
+      console.log('🔍 Complete panels array:', completePanels);
       
       // Map the complete panels to the expected format
       const mappedPanels = completePanels;
@@ -274,7 +327,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
         setIsGeneratingImages(true);
       }
     }
-  }, [curatedStoryResult, localIsPaid]);
+  }, [normalizedResult, localIsPaid]);
 
   // Update local isPaid when prop changes
   useEffect(() => {
@@ -315,13 +368,13 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
     
     // Fallback: split by double newlines
     const sections = storyContent.split(/\n\n+/).map(s => s.trim()).filter(Boolean);
-    return sections.slice(0, 8); // Limit to 8 panels
+    return sections; // Return all sections without limiting to 8 panels
   };
 
   // Function to generate story content from panels for download and sharing
   const generateStoryContentFromPanels = (): string => {
     if (!panels || panels.length === 0) {
-      return curatedStoryResult?.story_content || '';
+      return normalizedResult?.story?.story_content || '';
     }
 
     // Create story content from panel texts
@@ -360,8 +413,10 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
       console.log('  - Image URLs:', imageUrls);
 
       // Validate we have the expected number of panels
-      if (panels.length !== 8) {
-        console.warn(`Expected 8 panels, but got ${panels.length}`);
+      if (panels.length < 8) {
+        console.warn(`Expected at least 8 panels, but got ${panels.length}`);
+      } else if (panels.length > 8) {
+        console.log(`✅ Extended story with ${panels.length} panels (more than standard 8)`);
       }
 
       // Generate PDF with all panels (including those without images)
@@ -369,12 +424,14 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
         panels,            // Pass the entire panels array
         characterName,
         characterPhoto,
-        curatedStoryResult?.genre || 'adventure',
+        normalizedResult?.story?.genre || 'adventure',
         viewMode,
-        curatedStoryResult?.title || `${characterName}'s Curated Story`
+        normalizedResult?.story?.title || `${characterName}'s Curated Story`,
+        normalizedResult?.story?.front_page_img_url_portrait,
+        normalizedResult?.story?.back_page_image_url
       );
       
-      const filename = `${characterName}-${curatedStoryResult?.genre || 'curated'}-comic-${viewMode}.pdf`;
+      const filename = `${characterName}-${normalizedResult?.story?.genre || 'curated'}-comic-${viewMode}.pdf`;
       pdf.save(filename);
       toast.success(`Curated Story PDF (${viewMode} view) downloaded successfully!`);
       
@@ -524,16 +581,16 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
 
   // Refresh curated story data to get latest panel information
   const refreshCuratedStoryData = async () => {
-    if (!curatedStoryResult?.story_id) {
+    if (!normalizedResult?.story_id) {
       console.log('❌ No story_id available for refresh');
       return;
     }
     
     try {
-      console.log('🔄 Refreshing curated story data for story_id:', curatedStoryResult.story_id);
+      console.log('🔄 Refreshing curated story data for story_id:', normalizedResult.story_id);
       
       // Fetch the latest story data
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/curated-stories/${curatedStoryResult.story_id}/`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/curated-stories/${normalizedResult.story_id}/`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -549,13 +606,21 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
       
       // Update panels with latest data
       if (data.panels && Array.isArray(data.panels)) {
-        // Extract all panel texts from story content to ensure we have all 8 panels
-        const extractedPanelTexts = extractPanelsFromStory(data.story_content || curatedStoryResult?.story_content || '');
+        // Extract all panel texts from story content to ensure we have all panels
+        const extractedPanelTexts = extractPanelsFromStory(data.story_content || normalizedResult?.story?.story_content || '');
         console.log('🔄 Extracted panel texts from refreshed story:', extractedPanelTexts);
         
-        // Create a complete panel array with all 8 panels (index 0-7)
+        // Determine the total number of panels dynamically
+        const totalPanels = Math.max(
+          data.panels.length,
+          extractedPanelTexts.length,
+          8 // Minimum fallback
+        );
+        console.log('🔄 Total panels to create from refreshed data:', totalPanels);
+        
+        // Create a complete panel array with all panels dynamically
         const completePanels = [];
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < totalPanels; i++) {
           const existingPanel = data.panels.find((p: any) => p.panel_number === i);
           const extractedText = extractedPanelTexts[i] || '';
           
@@ -594,7 +659,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
           }
         }
         
-        console.log('🔄 Complete refreshed panels array (all 8):', completePanels);
+        console.log('🔄 Complete refreshed panels array:', completePanels);
         
         setPanels(completePanels);
         
@@ -796,7 +861,8 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
       try {
         const result = await regenerateCuratedPanel(panel.panel_id || panel.id);
         
-        if (result.success && result.panel) {
+        // Check if the response contains panel data (API returns { message, panel, facemint_info, s3_info })
+        if (result && result.panel) {
           console.log(`✅ Panel ${overallIndex} image generated successfully:`, {
             panel_id: result.panel.panel_id,
             panel_number: result.panel.panel_number,
@@ -849,7 +915,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
   };
 
   // Safety check: if no curated story result, show loading or error
-  if (!curatedStoryResult) {
+  if (!normalizedResult) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-3xl shadow-2xl p-8 text-center">
@@ -864,14 +930,14 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
   return (
     <>
       <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-sm h-fit rounded-2xl overflow-hidden">
-        <CardHeader className={`bg-gradient-to-r ${genreColors[curatedStoryResult.genre as keyof typeof genreColors] || 'from-purple-500 to-pink-500'} text-white`}>
+        <CardHeader className={`bg-gradient-to-r ${genreColors[normalizedResult.story?.genre as keyof typeof genreColors] || 'from-purple-500 to-pink-500'} text-white`}>
           <CardTitle className="text-2xl flex items-center gap-3 justify-center">
-            <span className="text-3xl">{genreEmojis[curatedStoryResult.genre as keyof typeof genreEmojis] || '📖'}</span>
+            <span className="text-3xl">{genreEmojis[normalizedResult.story?.genre as keyof typeof genreEmojis] || '📖'}</span>
             <div className="text-center">
-              <div className="text-2xl font-bold">{curatedStoryResult.title || `${characterName}'s Curated Story`}</div>
+              <div className="text-2xl font-bold">{normalizedResult.story?.title || `${characterName}'s Curated Story`}</div>
               <div className="text-sm bg-white/20 px-3 py-1 rounded-full mt-1 inline-block">
-                {curatedStoryResult.genre ? 
-                  curatedStoryResult.genre.charAt(0).toUpperCase() + curatedStoryResult.genre.slice(1) + ' Adventure' : 
+                {normalizedResult.story?.genre ? 
+                  normalizedResult.story.genre.charAt(0).toUpperCase() + normalizedResult.story.genre.slice(1) + ' Adventure' : 
                   'Curated Adventure'
                 }
               </div>
@@ -934,10 +1000,31 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
             </div>
           )}
 
+          {/* Front Page Preview */}
+          {normalizedResult?.story?.front_page_img_url_portrait && (
+            <div className="text-center bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200 rounded-xl p-6">
+              <h3 className="text-xl font-bold text-purple-700 mb-4">📖 Front Cover</h3>
+              <div className="relative inline-block">
+                <img
+                  src={normalizedResult.story.front_page_img_url_portrait}
+                  alt="Front Cover"
+                  className="w-64 h-80 rounded-xl mx-auto object-cover border-4 border-white shadow-lg"
+                />
+                <div className="absolute -top-2 -right-2 bg-yellow-400 rounded-full p-2">
+                  <span className="text-xl">📚</span>
+                </div>
+              </div>
+              <p className="text-lg font-bold text-purple-700 mt-3">Your Story's Beautiful Cover!</p>
+              <p className="text-sm text-green-600 mt-2 font-medium">
+                🎨 This will be the front page of your PDF! 🎨
+              </p>
+            </div>
+          )}
+
           {/* Story Content using ComicBook component */}
           <ComicBook
-            story={curatedStoryResult?.story_content || ''}
-            genre={curatedStoryResult?.genre || 'adventure'}
+            story={normalizedResult?.story?.story_content || ''}
+            genre={normalizedResult?.story?.genre || 'adventure'}
             characterPhoto={displayCharacterPhoto}
             characterName={displayCharacterName}
             getSceneImage={getSceneImage}
@@ -957,28 +1044,48 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
             isGeneratingImages={isGeneratingImages}
             lockedPanels={lockedPanels}
             isCreatingMagic={isCreatingMagic}
-            title={curatedStoryResult?.title || `${characterName}'s Curated Story`}
+            title={normalizedResult?.story?.title || `${characterName}'s Curated Story`}
             panels={panels}
             isPaid={localIsPaid}
             isCuratedStory={true}
             onCuratedDownloadPDF={handleDownloadPDF}
           />
           
-        
-
+          {/* Back Page Preview */}
+          {normalizedResult?.story?.back_page_image_url && (
+            <div className="text-center bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200 rounded-xl p-6">
+              <h3 className="text-xl font-bold text-purple-700 mb-4">📖 Back Cover</h3>
+              <div className="relative inline-block">
+                <img
+                  src={normalizedResult.story.back_page_image_url}
+                  alt="Back Cover"
+                  className="w-64 h-80 rounded-xl mx-auto object-cover border-4 border-white shadow-lg"
+                />
+                <div className="absolute -top-2 -right-2 bg-yellow-400 rounded-full p-2">
+                  <span className="text-xl">📚</span>
+                </div>
+              </div>
+              <p className="text-lg font-bold text-purple-700 mt-3">Your Story's Beautiful Back!</p>
+              <p className="text-sm text-green-600 mt-2 font-medium">
+                🎨 This will be the back page of your PDF! 🎨
+              </p>
+            </div>
+          )}
 
           {/* Action Buttons using StoryActions component */}
           <StoryActions
             story={generateStoryContentFromPanels()}
             characterName={displayCharacterName}
             characterPhoto={displayCharacterPhoto}
-            genre={curatedStoryResult?.genre || 'adventure'}
+            genre={normalizedResult?.story?.genre || 'adventure'}
             generatedImages={images}
             lockedPanels={lockedPanels}
             onUnlockRequest={handleUnlockRequest}
-            title={curatedStoryResult?.title || `${characterName}'s Curated Story`}
+            title={normalizedResult?.story?.title || `${characterName}'s Curated Story`}
             isPaid={localIsPaid}
             panels={panels}
+            front_page_img_url_portrait={normalizedResult?.story?.front_page_img_url_portrait}
+            back_page_image_url={normalizedResult?.story?.back_page_image_url}
           />
 
           <div className="text-center bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4">
@@ -1006,7 +1113,7 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
           console.log('❌ PricingModal onPaymentCancellation called' );
           handlePaymentCancellation();
         }}
-        storyId={curatedStoryResult?.story_id || ''}
+        storyId={normalizedResult?.story_id || ''}
       />
     </>
   );

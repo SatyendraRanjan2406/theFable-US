@@ -19,6 +19,8 @@ interface StoryActionsProps {
   title?: string; // NEW: story title
   isPaid?: boolean; // NEW: payment status
   panels?: any[]; // NEW: panels data for curated stories
+  front_page_img_url_portrait?: string; // NEW: front page image URL for curated stories
+  back_page_image_url?: string; // NEW: back page image URL for curated stories
 }
 
 const StoryActions: React.FC<StoryActionsProps> = ({
@@ -33,7 +35,9 @@ const StoryActions: React.FC<StoryActionsProps> = ({
   onUnlockRequest,
   title,
   isPaid = false,
-  panels
+  panels,
+  front_page_img_url_portrait,
+  back_page_image_url
 }) => {
   // Manage local payment state like FinalCuratedPreview
   const [localIsPaid, setLocalIsPaid] = useState(isPaid);
@@ -136,7 +140,9 @@ const StoryActions: React.FC<StoryActionsProps> = ({
         characterPhoto,
         genre,
         selectedViewMode, // Use the passed view mode
-        title
+        title,
+        front_page_img_url_portrait,
+        back_page_image_url
       );
       
       const filename = panels ? `${characterName}-curated-story-${selectedViewMode}.pdf` : `${characterName}-comic-story-${selectedViewMode}.pdf`;

@@ -91,7 +91,7 @@ const ComicPanel: React.FC<ComicPanelProps> = ({
     
     // If we have panel data with image URLs, use them
     if (panelData) {
-      const panelImageUrl = panelData.aws_s3_image_url || panelData.minimax_image_url;
+      const panelImageUrl = isValidImageUrl(panelData.aws_s3_image_url) ? panelData.aws_s3_image_url : panelData.minimax_image_url;
       console.log(`🎨 ComicPanel ${panelIndex}: panelData.aws_s3_image_url =`, panelData.aws_s3_image_url);
       console.log(`🎨 ComicPanel ${panelIndex}: panelData.minimax_image_url =`, panelData.minimax_image_url);
       console.log(`🎨 ComicPanel ${panelIndex}: panelImageUrl =`, panelImageUrl);
@@ -116,7 +116,7 @@ const ComicPanel: React.FC<ComicPanelProps> = ({
 
   // Reset image load failure state when panel data changes with new image URLs
   useEffect(() => {
-    if (panelData && (panelData.aws_s3_image_url || panelData.minimax_image_url)) {
+    if (panelData && (isValidImageUrl(panelData.aws_s3_image_url) || isValidImageUrl(panelData.minimax_image_url))) {
       console.log(`🎨 ComicPanel ${panelIndex}: Resetting imageLoadFailed due to new panel data with image URLs`);
       setImageLoadFailed(false);
     }
@@ -141,8 +141,13 @@ const ComicPanel: React.FC<ComicPanelProps> = ({
     });
   }
   
+  // Helper function to check if a URL is valid (not empty, null, or undefined)
+  const isValidImageUrl = (url: string | null | undefined) => {
+    return url && url.trim() !== '' && url !== 'null' && url !== 'undefined';
+  };
+  
   // Check if we should show locked state - only if locked AND no image available
-  const hasImage = imageUrl || sceneImage || (panelData && (panelData.aws_s3_image_url || panelData.minimax_image_url));
+  const hasImage = imageUrl || sceneImage || (panelData && (isValidImageUrl(panelData.aws_s3_image_url) || isValidImageUrl(panelData.minimax_image_url)));
   const shouldShowLocked = isLocked && !hasImage;
   
   // Check if we should show "Generate Image" button - when paid but no image available
@@ -165,7 +170,7 @@ const ComicPanel: React.FC<ComicPanelProps> = ({
       } : null,
       imageUrl,
       sceneImage,
-      panelDataImageUrl: panelData ? (panelData.aws_s3_image_url || panelData.minimax_image_url) : null
+      panelDataImageUrl: panelData ? (isValidImageUrl(panelData.aws_s3_image_url) ? panelData.aws_s3_image_url : panelData.minimax_image_url) : null
     });
   }
   
@@ -264,7 +269,7 @@ const ComicPanel: React.FC<ComicPanelProps> = ({
           </div>
         ) : hasImage && !imageLoadFailed ? (
           <img 
-            src={imageUrl || sceneImage || (panelData && (panelData.aws_s3_image_url || panelData.minimax_image_url))}
+            src={imageUrl || sceneImage || (panelData && (isValidImageUrl(panelData.aws_s3_image_url) ? panelData.aws_s3_image_url : panelData.minimax_image_url))}
             alt={`Scene for: ${displayText}`}
             className={`w-full h-full ${
               viewMode === 'fullscreen' ? 'object-cover' : 'object-contain'

@@ -2,6 +2,82 @@ import jsPDF from 'jspdf';
 import { imageToDataURL } from './imageConverter';
 import { getPoweredByText } from '@/config/app';
 
+// Helper function to safely set font with fallback
+const safeSetFont = (pdf: jsPDF, fontFamily: string, fontStyle: string, fallbackFamily: string = 'helvetica', fallbackStyle: string = 'normal') => {
+  try {
+    // Check if the custom font is available by trying to set it
+    pdf.setFont(fontFamily, fontStyle);
+    return true;
+  } catch (error) {
+    // Fallback to default font
+    try {
+      pdf.setFont(fallbackFamily, fallbackStyle);
+      console.warn(`⚠️ Font ${fontFamily} ${fontStyle} not available, using ${fallbackFamily} ${fallbackStyle}`);
+      return false;
+    } catch (fallbackError) {
+      // Last resort - use helvetica normal
+      pdf.setFont('helvetica', 'normal');
+      console.error('❌ All font fallbacks failed, using helvetica normal');
+      return false;
+    }
+  }
+};
+
+// Simple function to use Comic Sans-like fonts with built-in alternatives
+const useComicStyleFont = (pdf: jsPDF, style: 'normal' | 'bold' | 'italic' | 'bolditalic') => {
+  if (style === 'bold') {
+    // Use courier bold for Comic Sans-like bold appearance
+    pdf.setFont('helvetica', 'bold');
+  } else if (style === 'italic') {
+    // Use courier italic for Comic Sans-like italic appearance
+    pdf.setFont('helvetica', 'italic');
+  } else if (style === 'bolditalic') {
+    // Use courier bold for Comic Sans-like bold italic appearance
+    pdf.setFont('helvetica', 'bold');
+  } else {
+    // Use courier normal for Comic Sans-like normal appearance
+    pdf.setFont('helvetica', 'normal');
+  }
+};
+
+// Function to add "Powered by" text with background
+const addPoweredByText = (pdf: jsPDF, pageWidth: number, pageHeight: number) => {
+  const poweredByText = getPoweredByText();
+  pdf.setFontSize(18); // Increased font size
+  useComicStyleFont(pdf, 'bold'); // Made it bold for better visibility
+  pdf.setTextColor(255, 193, 7); // Bright yellow color for better visibility
+  
+  // Calculate text dimensions for background
+  const textWidth = pdf.getTextWidth(poweredByText);
+  const textHeight = 8; // Approximate text height
+  const padding = 8; // Padding around text
+  
+  // Position at bottom center
+  const textX = pageWidth - textWidth - padding - 53; // 20px from right edge
+  const textY = pageHeight - 14; // 2px from bottom - moved further down
+  
+  // Add white background with rounded corners
+  pdf.setFillColor(255, 255, 255); // White background
+  pdf.setDrawColor(200, 200, 200); // Light gray border
+  pdf.setLineWidth(1);
+  // Position background to properly align behind the text
+  const bgX = textX + 15 - padding; // Align with text position
+  const bgY = textY - textHeight - padding/2; // Center vertically with text
+  pdf.roundedRect(bgX, bgY, textWidth + padding*2, textHeight + padding, 8, 8, 'F');
+  pdf.roundedRect(bgX, bgY, textWidth + padding*2, textHeight + padding, 8, 8);
+  
+  // // Add shadow effect - draw black text slightly offset
+  // pdf.setTextColor(0, 0, 0); // Black shadow
+  // pdf.text(poweredByText, textX+17, textY, { align: 'left' });
+  
+  // Draw main text in bright yellow on top
+  pdf.setTextColor(255, 193, 7); // Bright yellow color
+  pdf.text(poweredByText, textX+15, textY-2, { align: 'left' });
+  
+  // Add hyperlink to the text (opens in new tab)
+  pdf.link(bgX, bgY, textWidth + padding*2, textHeight + padding, { url: `https://${import.meta.env.VITE_APP_DOMAIN || 'storymaker.jcool.in'}`, target: '_blank' });
+};
+
 export const generateComicPDF = async (
   storyData: string | string[], // Accept either raw story or pre-parsed panels
   characterName: string,
@@ -14,6 +90,10 @@ export const generateComicPDF = async (
   title?: string // NEW: story title
 ): Promise<jsPDF> => {
   const pdf = new jsPDF();
+  
+  // Set default font to avoid any font-related issues
+  pdf.setFont('helvetica', 'normal');
+  
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const margin = 15;
@@ -29,20 +109,20 @@ export const generateComicPDF = async (
   console.log('🔍 PDF Generator: Normalized genre:', normalizedGenre);
   
   if (normalizedGenre === 'fairytale') {
-    bgImageFrontUrl = '/pdf-bg/fairy_front.jpg';
-    bgImageBackUrl = '/pdf-bg/fairy_back.jpg';
+    bgImageFrontUrl = '/pdf-bg/fairy_back.jpeg';
+    bgImageBackUrl = '/pdf-bg/fairy_back.jpeg';
     console.log('🔍 PDF Generator: Using fairy tale background');
   } else if (normalizedGenre === 'adventure') {
-    bgImageFrontUrl = '/pdf-bg/adv_front.jpeg';
+    bgImageFrontUrl = '/pdf-bg/adv_back.jpeg';
     bgImageBackUrl = '/pdf-bg/adv_back.jpeg';
     console.log('🔍 PDF Generator: Using adventure background');
   } else if (normalizedGenre === 'mystery') {
-    bgImageFrontUrl = '/pdf-bg/mystery_front.jpeg';
+    bgImageFrontUrl = '/pdf-bg/mystery_back.jpeg';
     bgImageBackUrl = '/pdf-bg/mystery_back.jpeg';
     console.log('🔍 PDF Generator: Using mystery background');
   } else if (normalizedGenre === 'humour' || normalizedGenre === 'humor') {
-    bgImageFrontUrl = '/pdf-bg/comic_front.jpg';
-    bgImageBackUrl = '/pdf-bg/comic_back.jpg';
+    bgImageFrontUrl = '/pdf-bg/comic_back.jpeg';
+    bgImageBackUrl = '/pdf-bg/comic_back.jpeg';
     console.log('🔍 PDF Generator: Using humour/comic background');
   } else {
     console.log('🔍 PDF Generator: Unknown genre, using default adventure background');
@@ -82,35 +162,35 @@ export const generateComicPDF = async (
       const borderY = photoY - borderPadding - borderThickness;
       
       // Outer shadow
-      pdf.setFillColor(0, 0, 0);
-      pdf.roundedRect(borderX + 3, borderY + 3, totalSize, totalSize, 20, 20, 'F');
+      // pdf.setFillColor(0, 0, 0);
+      // pdf.roundedRect(borderX + 3, borderY + 3, totalSize, totalSize, 20, 20, 'F');
       
       // Main border frame
-      pdf.setFillColor(255, 215, 0); // Gold color for designer border
-      pdf.roundedRect(borderX, borderY, totalSize, totalSize, 20, 20, 'F');
+      // pdf.setFillColor(255, 215, 0); // Gold color for designer border
+      // pdf.roundedRect(borderX, borderY, totalSize, totalSize, 20, 20, 'F');
       
       // Inner border
-      pdf.setFillColor(255, 255, 255);
-      pdf.roundedRect(borderX + borderThickness, borderY + borderThickness, photoSize + (borderPadding * 2), photoSize + (borderPadding * 2), 15, 15, 'F');
+      // pdf.setFillColor(255, 255, 255);
+      // pdf.roundedRect(borderX + borderThickness, borderY + borderThickness, photoSize + (borderPadding * 2), photoSize + (borderPadding * 2), 15, 15, 'F');
       
       // Photo background
-      pdf.setFillColor(240, 240, 240);
-      pdf.roundedRect(borderX + borderThickness + borderPadding, borderY + borderThickness + borderPadding, photoSize, photoSize, 10, 10, 'F');
+      // pdf.setFillColor(240, 240, 240);
+      // pdf.roundedRect(borderX + borderThickness + borderPadding, borderY + borderThickness + borderPadding, photoSize, photoSize, 10, 10, 'F');
       
       // Add the photo
-      pdf.addImage(characterDataUrl, 'JPEG', borderX + borderThickness + borderPadding, borderY + borderThickness + borderPadding, photoSize, photoSize);
+      // pdf.addImage(characterDataUrl, 'JPEG', borderX + borderThickness + borderPadding, borderY + borderThickness + borderPadding, photoSize, photoSize);
       
       // Add decorative corner elements to the border
       pdf.setFillColor(255, 140, 0); // Orange accent
       const cornerSize = 6;
-      // Top-left corner
-      pdf.rect(borderX + 5, borderY + 5, cornerSize, cornerSize, 'F');
-      // Top-right corner
-      pdf.rect(borderX + totalSize - 11, borderY + 5, cornerSize, cornerSize, 'F');
-      // Bottom-left corner
-      pdf.rect(borderX + 5, borderY + totalSize - 11, cornerSize, cornerSize, 'F');
-      // Bottom-right corner
-      pdf.rect(borderX + totalSize - 11, borderY + totalSize - 11, cornerSize, cornerSize, 'F');
+      // // Top-left corner
+      // pdf.rect(borderX + 5, borderY + 5, cornerSize, cornerSize, 'F');
+      // // Top-right corner
+      // pdf.rect(borderX + totalSize - 11, borderY + 5, cornerSize, cornerSize, 'F');
+      // // Bottom-left corner
+      // pdf.rect(borderX + 5, borderY + totalSize - 11, cornerSize, cornerSize, 'F');
+      // // Bottom-right corner
+      // pdf.rect(borderX + totalSize - 11, borderY + totalSize - 11, cornerSize, cornerSize, 'F');
       
     } catch (error) {
       console.log('Could not add character photo to PDF:', error);
@@ -118,10 +198,10 @@ export const generateComicPDF = async (
   }
   
   // Add title with title.png background frame
-  const titleFrameWidth = pageWidth - 80; // Leave 40px margin on each side
+  const titleFrameWidth = pageWidth - 80; // Leave 90px margin on each side
   const titleFrameHeight = 70; // Height for title frame
-  const titleFrameX = 40; // X position (40px from left)
-  const titleFrameY = pageHeight / 2 + 40; // Y position below photo
+  const titleFrameX = 40; // X position (90px from left)
+  const titleFrameY = pageHeight / 2; // Y position centered on page
   
   // Load and add title.png background with transparency
   try {
@@ -136,11 +216,11 @@ export const generateComicPDF = async (
     const titleBgY = titleFrameY;
     
     // Add a subtle white background behind the title.png for better transparency
-    pdf.setFillColor(255, 255, 255);
-    pdf.setDrawColor(240, 240, 240);
-    pdf.setLineWidth(1);
-    pdf.roundedRect(titleBgX - 5, titleBgY - 1, titleBgWidth + 10, titleBgHeight + 2, 15, 15, 'F');
-    pdf.roundedRect(titleBgX - 5, titleBgY - 1, titleBgWidth + 10, titleBgHeight + 2, 15, 15);
+    // pdf.setFillColor(255, 255, 255);
+    // pdf.setDrawColor(240, 240, 240);
+    // pdf.setLineWidth(1);
+    // pdf.roundedRect(titleBgX - 5, titleBgY - 1, titleBgWidth + 10, titleBgHeight + 2, 15, 15, 'F');
+    // pdf.roundedRect(titleBgX - 5, titleBgY - 1, titleBgWidth + 10, titleBgHeight + 2, 15, 15);
     
     // Add the title.png with transparency support
     // pdf.addImage(titleBgDataUrl, 'PNG', titleBgX, titleBgY, titleBgWidth, titleBgHeight, undefined, 'FAST', 0);
@@ -169,9 +249,21 @@ export const generateComicPDF = async (
   }
   
   // Add title text - responsive to title.png background
-  pdf.setFont('times', 'bold');
-  pdf.setTextColor(205, 133, 63); // Golden brown color for stylish appearance
-  let displayTitle = title || `${characterName}'s ${genre.charAt(0).toUpperCase() + genre.slice(1)} Adventure`;
+  useComicStyleFont(pdf, 'bold');
+  // pdf.setTextColor(205, 133, 63); // Golden brown color for stylish appearance
+  pdf.setTextColor(255, 193, 7); // Bright yellow color for stylish appearance
+  
+  // Check if title already contains character name to avoid duplication
+  let displayTitle;
+  if (title && title.toLowerCase().includes(characterName.toLowerCase())) {
+    // Title already contains character name, use as is
+    displayTitle = title;
+  } else {
+    // Title doesn't contain character name, prepend it
+    displayTitle = title ? `${characterName}'s ${title}` : `${characterName}'s ${genre.charAt(0).toUpperCase() + genre.slice(1)}`;
+  }
+  
+  displayTitle = displayTitle.toUpperCase()
   
   // Calculate responsive text positioning based on title.png dimensions
   const titleBgAspectRatio = 2.5;
@@ -184,7 +276,8 @@ export const generateComicPDF = async (
   const textAreaX = titleBgX + (titleBgWidth * 0.15); // 15% margin from left edge for better centering
   
   // Responsive font sizing
-  let titleFontSize = Math.min(38, Math.floor(titleBgHeight * 0.4)); // Responsive font size
+  // let titleFontSize = Math.min(38, Math.floor(titleBgHeight * 0.4)); // Responsive font size
+  let titleFontSize = 50;
   pdf.setFontSize(titleFontSize);
   
   // Split title to fit within title.png background
@@ -192,51 +285,31 @@ export const generateComicPDF = async (
   
   // Adjust font size if text is too long
   if (titleLines.length > 2) {
-    titleFontSize = Math.min(35, Math.floor(titleBgHeight * 0.45));
+    // titleFontSize = Math.min(35, Math.floor(titleBgHeight * 0.45));
+    titleFontSize = 45
     pdf.setFontSize(titleFontSize);
     titleLines = pdf.splitTextToSize(displayTitle, textAreaWidth);
   }
   
   // Perfect center text within title.png background
-  const lineHeight =10;
+  const lineHeight = 16; // Increased from 10 to 16 for better line spacing
   const totalTextHeight = titleLines.length * lineHeight;
   const textStartY = titleFrameY + (titleBgHeight - totalTextHeight) / 2; // Perfect vertical center
   
   titleLines.forEach((line, i) => {
     const lineY = textStartY + (i * lineHeight);
-    pdf.text(line, titleBgX + (titleBgWidth / 2), lineY+15, { align: 'center' });
+    
+    // Add shadow effect - draw black text slightly offset
+    pdf.setTextColor(0, 0, 0); // Black shadow
+    pdf.text(line, titleBgX + (titleBgWidth / 2) + 2, lineY + 17, { align: 'center' });
+    
+    // Draw main text in bright yellow on top
+    pdf.setTextColor(255, 193, 7); // Bright yellow color
+    pdf.text(line, titleBgX + (titleBgWidth / 2), lineY + 15, { align: 'center' });
   });
   
   // Add "Powered by" text at bottom right with white background
-  const poweredByText = getPoweredByText();
-  pdf.setFontSize(18); // Increased font size
-  pdf.setFont('helvetica', 'bold'); // Made it bold for better visibility
-  pdf.setTextColor(205, 133, 63); // Golden brown color
-  
-  // Calculate text dimensions for background
-  const textWidth = pdf.getTextWidth(poweredByText);
-  const textHeight = 8; // Approximate text height
-  const padding = 8; // Padding around text
-  
-  // Position at bottom right
-  const textX = pageWidth - textWidth - padding -30; // 20px from right edge
-  const textY = pageHeight - 4; // 2px from bottom - moved further down
-  
-  // Add white background with rounded corners
-  pdf.setFillColor(255, 255, 255); // White background
-  pdf.setDrawColor(200, 200, 200); // Light gray border
-  pdf.setLineWidth(1);
-  // Position background to properly align behind the text
-  const bgX = textX + 15 - padding; // Align with text position
-  const bgY = textY - textHeight - padding/2; // Center vertically with text
-  pdf.roundedRect(bgX, bgY, textWidth + padding*2, textHeight + padding, 8, 8, 'F');
-  pdf.roundedRect(bgX, bgY, textWidth + padding*2, textHeight + padding, 8, 8);
-  
-  // Add the text
-  pdf.text(poweredByText, textX+15, textY, { align: 'left' });
-  
-  // Add hyperlink to the text (opens in new tab)
-  pdf.link(bgX, bgY, textWidth + padding*2, textHeight + padding, { url: `https://${import.meta.env.VITE_APP_DOMAIN || 'storymaker.jcool.in'}`, target: '_blank' });
+  addPoweredByText(pdf, pageWidth, pageHeight);
   
   // Now start the comic panels on a new page (no background)
   pdf.addPage();
@@ -361,8 +434,8 @@ export const generateComicPDF = async (
         pdf.setFillColor(255, 255, 255);
         pdf.rect(textX, textY - 2, textWidth, textHeight, 'F');
         pdf.setFontSize(14); // Bigger font for better readability
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(0, 0, 0);
+        useComicStyleFont(pdf, 'normal');
+        pdf.setTextColor(255, 193, 7); // Bright yellow for panel text
         const textLines = pdf.splitTextToSize(cleanText, textWidth - 4);
         const lineHeight = 5;
         const maxLines = Math.floor(textHeight / lineHeight);
@@ -435,7 +508,7 @@ export const generateComicPDF = async (
       const textWidth = pageWidth - (textMargin * 2);
       const textY = gradientStartY + 20; // Position text in the gradient area
       
-      pdf.setFont('helvetica', 'normal');
+      useComicStyleFont(pdf, 'normal');
       pdf.setFontSize(12); // Smaller font size
       pdf.setTextColor(255, 255, 255);
       
@@ -464,7 +537,7 @@ export const generateComicPDF = async (
       pdf.circle(pageCircleX, pageCircleY, 12);
       pdf.setTextColor(0, 0, 0);
       pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'bold');
+      useComicStyleFont(pdf, 'bold');
       pdf.text(`${panelIndex + 1}`, pageCircleX, pageCircleY + 3, { align: 'center' });
     }
   } else {
@@ -550,8 +623,8 @@ export const generateComicPDF = async (
     pdf.setFillColor(255, 255, 255);
     pdf.rect(textX, textY - 2, textWidth, textHeight, 'F');
         pdf.setFontSize(11); // Increased from 10 to 11 for better readability
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(0, 0, 0);
+    useComicStyleFont(pdf, 'normal');
+    pdf.setTextColor(255, 193, 7); // Bright yellow for panel text
     const textLines = pdf.splitTextToSize(cleanText, textWidth - 4);
         const lineHeight = 4; // Reduced from 5 to 4
     const maxLines = Math.floor(textHeight / lineHeight);
@@ -581,6 +654,9 @@ export const generateComicPDF = async (
   pdf.addPage();
   pdf.addImage(bgDataUrlBack, 'JPEG', 0, 0, pageWidth, pageHeight);
   
+  // Add "Powered by" text to back cover
+  addPoweredByText(pdf, pageWidth, pageHeight);
+  
   //console.log('PDF generation completed');
   return pdf;
 };
@@ -595,9 +671,16 @@ export const generateCuratedStoryPDF = async (
   characterPhoto: string | null,
   genre: string,
   viewMode: 'grid' | 'split' | 'fullscreen' = 'grid',
-  title?: string
+  title?: string,
+  front_page_img_url_portrait?: string,
+  back_page_image_url?: string
 ): Promise<jsPDF> => {
   const pdf = new jsPDF();
+  debugger;
+
+  // Set default font to avoid any font-related issues
+  pdf.setFont('helvetica', 'normal');
+  
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const margin = 15;
@@ -606,92 +689,53 @@ export const generateCuratedStoryPDF = async (
   let bgImageFrontUrl = '/pdf-bg/adv_front.jpeg';
   let bgImageBackUrl = '/pdf-bg/adv_back.jpeg';
   
-  // Normalize genre to handle different spellings and cases
-  const normalizedGenre = genre?.toLowerCase().trim();
-  console.log('🔍 Curated PDF Generator: Genre received:', genre, 'Normalized:', normalizedGenre);
-  
-  if (normalizedGenre === 'fairytale') {
-    bgImageFrontUrl = '/pdf-bg/fairy_front.jpg';
-    bgImageBackUrl = '/pdf-bg/fairy_back.jpg';
-    console.log('🔍 Curated PDF Generator: Using fairy tale background');
-  } else if (normalizedGenre === 'adventure') {
-    bgImageFrontUrl = '/pdf-bg/adv_front.jpeg';
-    bgImageBackUrl = '/pdf-bg/adv_back.jpeg';
-    console.log('🔍 Curated PDF Generator: Using adventure background');
-  } else if (normalizedGenre === 'mystery') {
-    bgImageFrontUrl = '/pdf-bg/mystery_front.jpeg';
-    bgImageBackUrl = '/pdf-bg/mystery_back.jpeg';
-    console.log('🔍 Curated PDF Generator: Using mystery background');
-  } else if (normalizedGenre === 'humour' || normalizedGenre === 'humor') {
-    bgImageFrontUrl = '/pdf-bg/comic_front.jpg';
-    bgImageBackUrl = '/pdf-bg/comic_back.jpg';
-    console.log('🔍 Curated PDF Generator: Using humour/comic background');
+  // Use custom front and back page images if provided
+  if (front_page_img_url_portrait) {
+    bgImageFrontUrl = front_page_img_url_portrait;
+    console.log('🔍 Curated PDF Generator: Using custom front page image:', front_page_img_url_portrait);
   } else {
-    console.log('🔍 Curated PDF Generator: Unknown genre, using default adventure background');
+    // Normalize genre to handle different spellings and cases
+    const normalizedGenre = genre?.toLowerCase().trim();
+    console.log('🔍 Curated PDF Generator: Genre received:', genre, 'Normalized:', normalizedGenre);
+    
+    if (normalizedGenre === 'fairytale') {
+      bgImageFrontUrl = '/pdf-bg/fairy_front.jpg';
+      bgImageBackUrl = '/pdf-bg/fairy_back.jpg';
+      console.log('🔍 Curated PDF Generator: Using fairy tale background');
+    } else if (normalizedGenre === 'adventure') {
+      bgImageFrontUrl = '/pdf-bg/adv_front.jpeg';
+      bgImageBackUrl = '/pdf-bg/adv_back.jpeg';
+      console.log('🔍 Curated PDF Generator: Using adventure background');
+    } else if (normalizedGenre === 'mystery') {
+      bgImageFrontUrl = '/pdf-bg/mystery_front.jpeg';
+      bgImageBackUrl = '/pdf-bg/mystery_back.jpeg';
+      console.log('🔍 Curated PDF Generator: Using mystery background');
+    } else if (normalizedGenre === 'humour' || normalizedGenre === 'humor') {
+      bgImageFrontUrl = '/pdf-bg/comic_front.jpg';
+      bgImageBackUrl = '/pdf-bg/comic_back.jpg';
+      console.log('🔍 Curated PDF Generator: Using humour/comic background');
+    } else {
+      console.log('🔍 Curated PDF Generator: Unknown genre, using default adventure background');
+    }
   }
-      
+  
+  // Use custom back page image if provided
+  if (back_page_image_url) {
+    bgImageBackUrl = back_page_image_url;
+    console.log('🔍 Curated PDF Generator: Using custom back page image:', back_page_image_url);
+  }
+  debugger;
   const bgDataUrlFront = await imageToDataURL(bgImageFrontUrl);
   const bgDataUrlBack = await imageToDataURL(bgImageBackUrl);
 
   // Front Cover Page - Start background from -30 from bottom
   pdf.addImage(bgDataUrlFront, 'JPEG', 0, -30, pageWidth, pageHeight + 30);
   
-  // Add character photo with thick designer border if available
-  if (characterPhoto) {
-    try {
-      const characterDataUrl = await imageToDataURL(characterPhoto);
-      const photoSize = 80; // Larger photo size
-      const photoX = pageWidth / 2 - photoSize / 2;
-      const photoY = pageHeight / 2 - 60; // Position above title
-      
-      // Create thick designer border for the photo
-      const borderThickness = 8;
-      const borderPadding = 10;
-      const totalSize = photoSize + (borderPadding * 2) + (borderThickness * 2);
-      const borderX = photoX - borderPadding - borderThickness;
-      const borderY = photoY - borderPadding - borderThickness;
-      
-      // Outer shadow
-      pdf.setFillColor(0, 0, 0);
-      pdf.roundedRect(borderX + 3, borderY + 3, totalSize, totalSize, 20, 20, 'F');
-      
-      // Main border frame
-      pdf.setFillColor(255, 215, 0); // Gold color for designer border
-      pdf.roundedRect(borderX, borderY, totalSize, totalSize, 20, 20, 'F');
-      
-      // Inner border
-      pdf.setFillColor(255, 255, 255);
-      pdf.roundedRect(borderX + borderThickness, borderY + borderThickness, photoSize + (borderPadding * 2), photoSize + (borderPadding * 2), 15, 15, 'F');
-      
-      // Photo background
-      pdf.setFillColor(240, 240, 240);
-      pdf.roundedRect(borderX + borderThickness + borderPadding, borderY + borderThickness + borderPadding, photoSize, photoSize, 10, 10, 'F');
-      
-      // Add the photo
-      pdf.addImage(characterDataUrl, 'JPEG', borderX + borderThickness + borderPadding, borderY + borderThickness + borderPadding, photoSize, photoSize);
-      
-      // Add decorative corner elements to the border
-      pdf.setFillColor(255, 140, 0); // Orange accent
-      const cornerSize = 6;
-      // Top-left corner
-      pdf.rect(borderX + 5, borderY + 5, cornerSize, cornerSize, 'F');
-      // Top-right corner
-      pdf.rect(borderX + totalSize - 11, borderY + 5, cornerSize, cornerSize, 'F');
-      // Bottom-left corner
-      pdf.rect(borderX + 5, borderY + totalSize - 11, cornerSize, cornerSize, 'F');
-      // Bottom-right corner
-      pdf.rect(borderX + totalSize - 11, borderY + totalSize - 11, cornerSize, cornerSize, 'F');
-      
-    } catch (error) {
-      console.log('Could not add character photo to PDF:', error);
-    }
-  }
-  
   // Add title with title.png background frame
   const titleFrameWidth = pageWidth - 80; // Leave 90px margin on each side
   const titleFrameHeight = 70; // Height for title frame
   const titleFrameX = 40; // X position (90px from left)
-  const titleFrameY = pageHeight / 2 + 40; // Y position below photo
+  const titleFrameY = pageHeight / 2 + 40; // Y position centered on page
   
   // Load and add title.png background with transparency
   try {
@@ -739,9 +783,20 @@ export const generateCuratedStoryPDF = async (
   }
   
   // Add title text - responsive to title.png background
-  pdf.setFont('times', 'bold');
-  pdf.setTextColor(205, 133, 63); // Golden brown color for stylish appearance
-  let displayTitle = title || `${characterName}'s ${genre.charAt(0).toUpperCase() + genre.slice(1)} Adventure`;
+  useComicStyleFont(pdf, 'bold');
+  pdf.setTextColor(255, 193, 7); // Bright yellow color for stylish appearance
+  
+  // Check if title already contains character name to avoid duplication
+  let displayTitle;
+  if (title && title.toLowerCase().includes(characterName.toLowerCase())) {
+    // Title already contains character name, use as is
+    displayTitle = title;
+  } else {
+    // Title doesn't contain character name, prepend it
+    displayTitle = title ? `${characterName}'s ${title}` : `${characterName}'s ${genre.charAt(0).toUpperCase() + genre.slice(1)} Adventure`;
+  }
+  
+  displayTitle = displayTitle.toUpperCase()
   
   // Calculate responsive text positioning based on title.png dimensions
   const titleBgAspectRatio = 2.5;
@@ -774,39 +829,18 @@ export const generateCuratedStoryPDF = async (
   
   titleLines.forEach((line, i) => {
     const lineY = textStartY + (i * lineHeight);
+    
+    // Add shadow effect - draw black text slightly offset
+    pdf.setTextColor(0, 0, 0); // Black shadow
+    pdf.text(line, titleBgX + (titleBgWidth / 2) + 1, lineY + 1, { align: 'center' });
+    
+    // Draw main text in bright yellow on top
+    pdf.setTextColor(255, 193, 7); // Bright yellow color
     pdf.text(line, titleBgX + (titleBgWidth / 2), lineY, { align: 'center' });
   });
   
   // Add footer - "Powered by" text at bottom right with white background
-  const poweredByText = getPoweredByText();
-  pdf.setFontSize(16); // Increased font size
-  pdf.setFont('helvetica', 'bold'); // Made it bold for better visibility
-  pdf.setTextColor(205, 133, 63); // Golden brown color
-  
-  // Calculate text dimensions for background
-  const textWidth = pdf.getTextWidth(poweredByText);
-  const textHeight = 8; // Approximate text height
-  const padding = 8; // Padding around text
-  
-  // Position at bottom right
-  const textX = pageWidth - textWidth - padding - 30; // 20px from right edge
-  const textY = pageHeight - 2; // 2px from bottom - moved further down
-  
-  // Add white background with rounded corners
-  pdf.setFillColor(255, 255, 255); // White background
-  pdf.setDrawColor(200, 200, 200); // Light gray border
-  pdf.setLineWidth(1);
-  // Position background to properly align behind the text
-  const bgX = textX + 15 - padding; // Align with text position
-  const bgY = textY - textHeight - padding/2; // Center vertically with text
-  pdf.roundedRect(bgX, bgY, textWidth + padding*2, textHeight + padding, 8, 8, 'F');
-  pdf.roundedRect(bgX, bgY, textWidth + padding*2, textHeight + padding, 8, 8);
-  
-  // Add the text
-  pdf.text(poweredByText, textX+15, textY, { align: 'left' });
-  
-  // Add hyperlink to the text (opens in new tab)
-  pdf.link(bgX, bgY, textWidth + padding*2, textHeight + padding, { url: `https://${import.meta.env.VITE_APP_DOMAIN || 'storymaker.jcool.in'}`, target: '_blank' });
+  addPoweredByText(pdf, pageWidth, pageHeight);
   
   // Start comic panels on new page
   pdf.addPage();
@@ -883,7 +917,7 @@ export const generateCuratedStoryPDF = async (
       pdf.setFillColor(255, 255, 255);
       pdf.rect(textX, textY - 2, textWidth, textHeight, 'F');
       pdf.setFontSize(14);
-      pdf.setFont('helvetica', 'normal');
+      useComicStyleFont(pdf, 'normal');
       pdf.setTextColor(0, 0, 0);
       const textLines = pdf.splitTextToSize(cleanText, textWidth - 4);
       const lineHeight = 5;
@@ -957,7 +991,7 @@ export const generateCuratedStoryPDF = async (
       const textWidth = pageWidth - (textMargin * 2);
       const textY = gradientStartY + 20; // Position text in the bottom area
       
-      pdf.setFont('helvetica', 'normal');
+      useComicStyleFont(pdf, 'normal');
       pdf.setFontSize(12); // Smaller font size
       
       // Add subtle text shadow for readability
@@ -996,7 +1030,7 @@ export const generateCuratedStoryPDF = async (
       pdf.circle(pageCircleX, pageCircleY, 12);
       pdf.setTextColor(0, 0, 0);
       pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'bold');
+      useComicStyleFont(pdf, 'bold');
       pdf.text(`${panelIndex + 1}`, pageCircleX, pageCircleY + 3, { align: 'center' });
     }
   } else {
@@ -1083,10 +1117,10 @@ export const generateCuratedStoryPDF = async (
         pdf.setFillColor(255, 255, 255);
         pdf.rect(textX, textY - 2, textWidth, textHeight, 'F');
         pdf.setFontSize(11); // Increased from 10 to 11 for better readability
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(0, 0, 0);
+        useComicStyleFont(pdf, 'normal');
+        pdf.setTextColor(255, 193, 7); // Bright yellow for panel text
         const textLines = pdf.splitTextToSize(cleanText, textWidth - 4);
-        const lineHeight = 4; // Reduced from 5 to 4
+        const lineHeight = 14; // Reduced from 5 to 4
         const maxLines = Math.floor(textHeight / lineHeight);
         const displayLines = textLines.slice(0, maxLines);
         for (let lineIndex = 0; lineIndex < displayLines.length; lineIndex++) {
@@ -1115,6 +1149,9 @@ export const generateCuratedStoryPDF = async (
   // Back Cover Page
   pdf.addPage();
   pdf.addImage(bgDataUrlBack, 'JPEG', 0, 0, pageWidth, pageHeight);
+  
+  // Add "Powered by" text to back cover
+  addPoweredByText(pdf, pageWidth, pageHeight);
   
   console.log('🔍 Curated PDF generation completed');
   return pdf;

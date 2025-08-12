@@ -189,7 +189,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
   const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
   const workflow = useStoryWorkflow();
-  const { isAuthenticated, login, logout, storyId, setStoryId } = useAuth();
+  const { login, logout, storyId, setStoryId } = useAuth();
 
   // Load curated stories on component mount
   useEffect(() => {
@@ -304,22 +304,17 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     
     if (editStoryId) {
       console.log('🔄 Starting to load story for editing:', editStoryId);
-      console.log('🔐 Authentication state:', { isAuthenticated, hasToken: !!localStorage.getItem('authToken') });
+      console.log('🔐 Authentication state:', { hasToken: !!localStorage.getItem('authToken') });
       
-      // Check if user is authenticated
-      if (!isAuthenticated) {
+      // Check if user is authenticated by checking localStorage directly
+      const token = localStorage.getItem('authToken');
+      if (!token) {
         console.error('❌ User not authenticated');
-        console.log('🔐 Checking localStorage for authToken...');
-        const token = localStorage.getItem('authToken');
-        if (token) {
-          console.log('🔐 Token found in localStorage, but isAuthenticated is false. This might be a timing issue.');
-          // Try to proceed anyway if token exists
-          console.log('🔄 Proceeding with token from localStorage...');
-        } else {
-          toast.error('Please log in to edit stories');
-          return;
-        }
+        toast.error('Please log in to edit curated stories');
+        return;
       }
+      
+      console.log('🔐 User authenticated via localStorage token');
       
       // Fetch story panels and populate state
       const fetchPanels = async () => {
@@ -523,7 +518,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     } else {
       console.log('🔍 No editStoryId found in URL params');
     }
-  }, [searchParams, location.search, isAuthenticated]);
+  }, [searchParams, location.search]);
 
   // Edit flow for curated stories - separate from AI stories
   useEffect(() => {
@@ -536,22 +531,17 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     
     if (editCuratedStoryId) {
       console.log('🔄 Starting to load curated story for editing:', editCuratedStoryId);
-      console.log('🔐 Authentication state:', { isAuthenticated, hasToken: !!localStorage.getItem('authToken') });
+      console.log('🔐 Authentication state:', { hasToken: !!localStorage.getItem('authToken') });
       
-      // Check if user is authenticated
-      if (!isAuthenticated) {
+      // Check if user is authenticated by checking localStorage directly
+      const token = localStorage.getItem('authToken');
+      if (!token) {
         console.error('❌ User not authenticated');
-        console.log('🔐 Checking localStorage for authToken...');
-        const token = localStorage.getItem('authToken');
-        if (token) {
-          console.log('🔐 Token found in localStorage, but isAuthenticated is false. This might be a timing issue.');
-          // Try to proceed anyway if token exists
-          console.log('🔄 Proceeding with token from localStorage...');
-        } else {
-          toast.error('Please log in to edit curated stories');
-          return;
-        }
+        toast.error('Please log in to edit curated stories');
+        return;
       }
+      
+      console.log('🔐 User authenticated via localStorage token');
       
       // Fetch curated story data and populate state
       const fetchCuratedStory = async () => {
@@ -683,7 +673,8 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
               characterPhoto
             }
           });
-          
+         
+          debugger;
           setCuratedStoryResult({
             story_id: storyData.id,
             story_content: reconstructedStory,
@@ -693,6 +684,16 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
             // Add character information from panels response (edit mode) or story data (fallback)
             character_name: characterName,
             photo_url: characterPhoto,
+            story:{
+              character_name: characterName,
+              photo_url: characterPhoto,
+              title: storyData.title || storyData.story_title,
+              genre: storyData.genre || storyData.story_genre,
+              front_page_img_url_portrait: storyData.front_page_img_url_portrait,
+              back_page_image_url: storyData.back_page_image_url
+            },
+            front_page_img_url_portrait: storyData.front_page_img_url_portrait,
+            back_page_image_url: storyData.back_page_image_url
           });
           
           // Set form data with story information (same as AI story flow)
@@ -770,7 +771,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
       isCancelled = true;
       setIsLoadingCuratedStory(false);
     };
-  }, [searchParams, location.search, isAuthenticated]);
+  }, [searchParams, location.search]);
 
   // Additional effect to handle editStoryId on mount and URL changes
   useEffect(() => {
@@ -860,6 +861,12 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
       setSearchParams({});
     }
     
+    // Clear curated story edit URL parameters
+    const editCuratedStoryId = searchParams.get('editCuratedStoryId');
+    if (editCuratedStoryId) {
+      setSearchParams({});
+    }
+    
     // Clear curated story edit state
     setCuratedStoryForEdit(null);
     setIsLoadingCuratedStory(false);
@@ -940,7 +947,14 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
       return;
     }
     
-
+    // Check if we're in curated story edit mode via URL parameter
+    const editCuratedStoryId = searchParams.get('editCuratedStoryId');
+    if (editCuratedStoryId) {
+      console.log('🔄 Navigating back to form from curated story edit mode');
+      // Clear URL parameters and stay on current page
+      setSearchParams({});
+      return;
+    }
     
     // Reset workflow state
     workflowHandleBackToForm();
@@ -981,6 +995,12 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
   const handleCuratedStoryBack = () => {
     setSelectedCuratedStory(null);
     setIsLoadingCuratedStory(false); // Reset curated story loading state
+    
+    // Clear URL parameters if we're in edit mode
+    const editCuratedStoryId = searchParams.get('editCuratedStoryId');
+    if (editCuratedStoryId) {
+      setSearchParams({});
+    }
   };
 
   const handleIllustrationsReady = (story: string, images: string[], panelData?: Array<{
@@ -1222,7 +1242,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
           const { regenerateCuratedPanel } = await import('@/utils/curatedStoryApi');
           const result = await regenerateCuratedPanel(panel.panel_id || panel.id);
           
-          if (result.success && result.panel) {
+          if (result && result.panel) {
             console.log(`✅ Panel ${overallIndex} image generated successfully:`, {
               panel_id: result.panel.panel_id,
               panel_number: result.panel.panel_number,
@@ -1307,7 +1327,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
             
             const result = await generatePanelImage(panel.id, "16:9", 1, panel.panel_text, panel.panel_number, characterImageBase64, characterImageType);
             
-            if (result.success && result.image_url) {
+            if (result && result.image_url) {
               console.log(`✅ Panel image generated successfully:`, {
                 panel_id: result.panel_id,
                 panel_number: result.panel_number,
@@ -1711,16 +1731,14 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
               };
 
               // Only add user_id if user is authenticated
-              if (isAuthenticated) {
+              const token = localStorage.getItem('authToken');
+              if (token) {
                 try {
-                  const token = localStorage.getItem('authToken');
-                  if (token) {
-                    // Decode JWT token to get user_id
-                    const tokenPayload = JSON.parse(atob(token.split('.')[1]));
-                    const userId = tokenPayload.user_id || tokenPayload.sub;
-                    if (userId) {
-                      payload.user_id = userId;
-                    }
+                  // Decode JWT token to get user_id
+                  const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+                  const userId = tokenPayload.user_id || tokenPayload.sub;
+                  if (userId) {
+                    payload.user_id = userId;
                   }
                 } catch (error) {
                   console.error('Error extracting user_id from token:', error);
@@ -1757,6 +1775,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
               setCuratedGenerationProgress(3);
               setCuratedCurrentStep('Finalizing your story...');
               // Store the result
+              debugger;
               setCuratedStoryResult(result);
               
               // Show success message
