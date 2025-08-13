@@ -922,7 +922,6 @@ export const generateCuratedStoryPDF = async (
       try {
         const gradientDataUrl = await imageToDataURL('/pdf-bg/gradient.png');
         pdf.addImage(gradientDataUrl, 'PNG', 0, gradientStartY, pageWidth, gradientHeight);
-        pdf.setGState(pdf.GState({ opacity: 0.5 }));
       } catch (error) {
         console.log('🔍 Curated PDF Generator: Failed to add gradient background, using fallback', error);
         // Fallback to a translucent gradient effect with 0.3 opacity
