@@ -408,7 +408,7 @@ export const generateComicPDF = async (
         debugger
         if (imageUrl && imageUrl !== 'undefined' && imageUrl !== null) {
           try {
-            const imageDataUrl = imageUrl //await imageToDataURL(imageUrl);
+            const imageDataUrl = await imageToDataURL(imageUrl);
             pdf.addImage(imageDataUrl, 'JPEG', imageX, imageY, imageWidth, imageHeight);
           } catch (error) {
             pdf.setFillColor(245, 245, 245);
@@ -451,14 +451,7 @@ export const generateComicPDF = async (
           pdf.text('...', textX + textWidth - 10, lastLineY);
         }
       }
-      // Page number
-      const pageCircleX = pageWidth - 15;
-      const pageCircleY = pageHeight - 5;
-      pdf.setFillColor(255, 182, 193);
-      pdf.circle(pageCircleX, pageCircleY, 8, 'F');
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(10);
-      pdf.text(`${pageNum + 1}`, pageCircleX, pageCircleY + 3, { align: 'center' });
+      // Page number removed - no longer needed
     }
   } else if (viewMode === 'fullscreen') {
     // Fullscreen view: 1 panel per page with image as full background
@@ -499,22 +492,25 @@ export const generateComicPDF = async (
       } catch (error) {
         console.log('🔍 PDF Generator: Failed to add gradient background, using fallback', error);
         // Fallback to a simple gradient effect
-        pdf.setFillColor(0, 0, 0);
+        pdf.setFillColor(245, 245, 245); // Very light gray to simulate transparency (245/255 ≈ 0.96, so 4% opacity)
         pdf.rect(0, gradientStartY, pageWidth, gradientHeight, 'F');
       }
       
-      // Add panel text at bottom with white color
-      const textMargin = 20;
+      // Add panel text at bottom with minimal padding/margins
+      const textMargin = 8; // Reduced from 20 to 8 for minimal margins like the image
       const textWidth = pageWidth - (textMargin * 2);
-      const textY = gradientStartY + 20; // Position text in the gradient area
+      const textY = gradientStartY + 8; // Reduced from 20 to 8 for minimal top margin like the image
       
       useComicStyleFont(pdf, 'normal');
-      pdf.setFontSize(12); // Smaller font size
-      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(10); // Match ComicPanel text-[10px]
+      pdf.setTextColor(255, 255, 255); // White text like ComicPanel
+      
+      // Keep original gradient background (no black overlay)
+      // The gradient background is already added above with the original properties
       
       const textLines = pdf.splitTextToSize(cleanText, textWidth);
-      const lineHeight = 8;
-      const maxLines = Math.floor((gradientHeight - 40) / lineHeight);
+      const lineHeight = 6; // Reduced from 8 to 6 for tighter spacing like the image
+      const maxLines = Math.floor((gradientHeight - 16) / lineHeight); // Reduced from 20 to 16 for minimal padding
       const displayLines = textLines.slice(0, maxLines);
       
       for (let lineIndex = 0; lineIndex < displayLines.length; lineIndex++) {
@@ -527,22 +523,11 @@ export const generateComicPDF = async (
         pdf.text('...', textMargin + textWidth - 20, lastLineY);
       }
       
-      // Add page number
-      const pageCircleX = pageWidth - 25;
-      const pageCircleY = pageHeight - 25;
-      pdf.setFillColor(255, 255, 255);
-      pdf.setDrawColor(0, 0, 0);
-      pdf.setLineWidth(1);
-      pdf.circle(pageCircleX, pageCircleY, 12, 'F');
-      pdf.circle(pageCircleX, pageCircleY, 12);
-      pdf.setTextColor(0, 0, 0);
-      pdf.setFontSize(10);
-      useComicStyleFont(pdf, 'bold');
-      pdf.text(`${panelIndex + 1}`, pageCircleX, pageCircleY + 3, { align: 'center' });
+      // Page number removed - no longer needed
     }
   } else {
     // Grid view: 2x2 grid (4 panels per page) - Optimized for larger panels and smaller font
-    const reducedMargin = 12; // Reduced from 20 to 12
+    const reducedMargin = 8; // Reduced from 12 to 8 for tighter spacing
     const panelWidth = (pageWidth - reducedMargin * 3) / 2;
     const panelHeight = 125; // Reduced from 130 to 125 to fit within page
     const panelsPerPage = 4; // 2x2 grid per page
@@ -561,7 +546,7 @@ export const generateComicPDF = async (
       // pdf.setTextColor(70, 130, 180);
       // pdf.setFont('helvetica', 'bold');
       // pdf.text('Comic Panels', pageWidth / 2, 24, { align: 'center' });
-    const startY = 25; // Reduced from 35 to 25
+    const startY = 20; // Reduced from 25 to 20 for more space
       const startPanelIndex = pageNum * panelsPerPage;
       const endPanelIndex = Math.min(startPanelIndex + panelsPerPage, panelsToShow.length);
       for (let panelIndex = startPanelIndex; panelIndex < endPanelIndex; panelIndex++) {
@@ -612,41 +597,78 @@ export const generateComicPDF = async (
       pdf.setFillColor(245, 245, 245);
       pdf.rect(imageX, imageY, imageWidth, imageHeight, 'F');
           pdf.setFontSize(8);
-      pdf.setTextColor(128, 128, 128);
-      pdf.text('Image not available', imageX + imageWidth / 2, imageY + imageHeight / 2, { align: 'center' });
-      pdf.setTextColor(0, 0, 0);
+        pdf.setTextColor(128, 128, 128);
+        pdf.text('Image not available', imageX + imageWidth / 2, imageY + imageHeight / 2, { align: 'center' });
+        pdf.setTextColor(0, 0, 0);
     }
     const textX = x + 3;
-        const textY = imageY + imageHeight + 8; // Reduced from 10 to 8
+        const textY = imageY + imageHeight + 6; // Reduced from 8 to 6 for tighter spacing
     const textWidth = panelWidth - 6;
-        const textHeight = panelHeight - (imageHeight + 12); // Reduced from 15 to 12
+        const textHeight = panelHeight - (imageHeight + 10); // Reduced from 12 to 10 for more text space
     pdf.setFillColor(255, 255, 255);
     pdf.rect(textX, textY - 2, textWidth, textHeight, 'F');
-        pdf.setFontSize(11); // Increased from 10 to 11 for better readability
-    useComicStyleFont(pdf, 'normal');
-    pdf.setTextColor(255, 193, 7); // Bright yellow for panel text
-    const textLines = pdf.splitTextToSize(cleanText, textWidth - 4);
-        const lineHeight = 4; // Reduced from 5 to 4
-    const maxLines = Math.floor(textHeight / lineHeight);
-    const displayLines = textLines.slice(0, maxLines);
-    for (let lineIndex = 0; lineIndex < displayLines.length; lineIndex++) {
-      const lineY = textY + (lineIndex * lineHeight);
-      if (lineY < textY + textHeight - lineHeight) {
-        pdf.text(displayLines[lineIndex], textX + 2, lineY);
-      }
-    }
-    if (textLines.length > maxLines) {
-      const lastLineY = textY + ((maxLines - 1) * lineHeight);
-      pdf.text('...', textX + textWidth - 10, lastLineY);
+        
+        // Remove blank lines and normalize text
+        const normalizedText = cleanText
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 0)
+          .join('\n');
+        
+        // Dynamic font size and line height calculation for optimal text fitting
+        let fontSize = 9;
+        let lineHeight = 4;
+        
+        // Calculate how many lines we can fit with current settings
+        pdf.setFontSize(fontSize);
+        const textLines = pdf.splitTextToSize(normalizedText, textWidth - 4);
+        let maxLines = Math.floor(textHeight / lineHeight);
+        
+        // If text doesn't fit, reduce font size and recalculate
+        while (textLines.length > maxLines && fontSize > 7) {
+          fontSize--;
+          pdf.setFontSize(fontSize);
+          const adjustedTextLines = pdf.splitTextToSize(normalizedText, textWidth - 4);
+          lineHeight = Math.max(3, fontSize * 0.4); // Dynamic line height based on font size
+          maxLines = Math.floor(textHeight / lineHeight);
+          
+          // If still doesn't fit, reduce line height further
+          if (adjustedTextLines.length > maxLines) {
+            lineHeight = Math.max(2.5, lineHeight * 0.9); // Reduce line height slightly
+            maxLines = Math.floor(textHeight / lineHeight);
+          }
+        }
+        
+        // Get final text lines with optimal settings
+        const finalTextLines = pdf.splitTextToSize(normalizedText, textWidth - 4);
+        const finalLineHeight = Math.max(2.5, fontSize * 0.4);
+        const finalMaxLines = Math.floor(textHeight / finalLineHeight);
+        
+        // Display all text lines that fit within the available space
+        const displayLines = finalTextLines.slice(0, finalMaxLines);
+        
+        useComicStyleFont(pdf, 'normal');
+        pdf.setTextColor(255, 193, 7); // Bright yellow for panel text
+        
+        for (let lineIndex = 0; lineIndex < displayLines.length; lineIndex++) {
+          const lineY = textY + (lineIndex * finalLineHeight);
+          if (lineY < textY + textHeight - finalLineHeight) {
+            pdf.text(displayLines[lineIndex], textX + 2, lineY);
+          }
+        }
+        
+        // If text still doesn't fit completely, show a subtle indicator
+        if (finalTextLines.length > finalMaxLines) {
+          const lastLineY = textY + ((finalMaxLines - 1) * finalLineHeight);
+          // Show a small indicator that more text exists
+          pdf.setFontSize(6);
+          pdf.setTextColor(255, 140, 0); // Orange color for indicator
+          pdf.text('...', textX + textWidth - 8, lastLineY);
+          // Reset font size for next panel
+          pdf.setFontSize(fontSize);
         }
       }
-      const pageCircleX = pageWidth - 15;
-      const pageCircleY = pageHeight - 5;
-      pdf.setFillColor(255, 182, 193);
-      pdf.circle(pageCircleX, pageCircleY, 8, 'F');
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(8);
-      pdf.text(`${pageNum + 1}`, pageCircleX, pageCircleY + 3, { align: 'center' });
+      // Page number removed - no longer needed
     }
   }
   
@@ -731,116 +753,7 @@ export const generateCuratedStoryPDF = async (
   // Front Cover Page - Start background from -30 from bottom
   pdf.addImage(bgDataUrlFront, 'JPEG', 0, -30, pageWidth, pageHeight + 30);
   
-  // Add title with title.png background frame
-  const titleFrameWidth = pageWidth - 80; // Leave 90px margin on each side
-  const titleFrameHeight = 70; // Height for title frame
-  const titleFrameX = 40; // X position (90px from left)
-  const titleFrameY = pageHeight / 2 + 40; // Y position centered on page
-  
-  // Load and add title.png background with transparency
-  try {
-    const titleBgDataUrl = await imageToDataURL('/pdf-bg/title.png');
-    // Calculate aspect ratio to maintain proportions
-    const titleBgAspectRatio = 2.5; // Approximate aspect ratio of title.png (width/height)
-    const titleBgHeight = titleFrameHeight;
-    const titleBgWidth = titleBgHeight * titleBgAspectRatio;
-    
-    // Center the title background within the available space
-    const titleBgX = titleFrameX + (titleFrameWidth - titleBgWidth) / 2;
-    const titleBgY = titleFrameY;
-    
-    // Add a subtle white background behind the title.png for better transparency
-    pdf.setFillColor(255, 255, 255);
-    pdf.setDrawColor(240, 240, 240);
-    pdf.setLineWidth(1);
-    pdf.roundedRect(titleBgX - 5, titleBgY - 1, titleBgWidth + 10, titleBgHeight + 2, 15, 15, 'F');
-    pdf.roundedRect(titleBgX - 5, titleBgY - 1, titleBgWidth + 10, titleBgHeight + 2, 15, 15);
-    
-    // Add the title.png with transparency support
-    // pdf.addImage(titleBgDataUrl, 'PNG', titleBgX, titleBgY, titleBgWidth, titleBgHeight, undefined, 'FAST', 0);
-  } catch (error) {
-    console.log('🔍 Curated PDF Generator: Failed to add title background, using fallback', error);
-    // Fallback to original white background
-    pdf.setFillColor(255, 255, 255);
-    pdf.roundedRect(titleFrameX, titleFrameY, titleFrameWidth, titleFrameHeight, 12, 12, 'F');
-    
-    // Inner border for title frame
-    pdf.setDrawColor(100, 100, 100);
-    pdf.setLineWidth(2);
-    pdf.roundedRect(titleFrameX, titleFrameY, titleFrameWidth, titleFrameHeight, 12, 12);
-    
-    // Add decorative elements to title frame
-    pdf.setFillColor(150, 150, 150);
-    const titleCornerSize = 4;
-    // Top-left corner
-    pdf.rect(titleFrameX + 5, titleFrameY + 5, titleCornerSize, titleCornerSize, 'F');
-    // Top-right corner
-    pdf.rect(titleFrameX + titleFrameWidth - 9, titleFrameY + 5, titleCornerSize, titleCornerSize, 'F');
-    // Bottom-left corner
-    pdf.rect(titleFrameX + 5, titleFrameY + titleFrameHeight - 9, titleCornerSize, titleCornerSize, 'F');
-    // Bottom-right corner
-    pdf.rect(titleFrameX + titleFrameWidth - 9, titleFrameY + titleFrameHeight - 9, titleCornerSize, titleCornerSize, 'F');
-  }
-  
-  // Add title text - responsive to title.png background
-  useComicStyleFont(pdf, 'bold');
-  pdf.setTextColor(255, 193, 7); // Bright yellow color for stylish appearance
-  
-  // Check if title already contains character name to avoid duplication
-  let displayTitle;
-  if (title && title.toLowerCase().includes(characterName.toLowerCase())) {
-    // Title already contains character name, use as is
-    displayTitle = title;
-  } else {
-    // Title doesn't contain character name, prepend it
-    displayTitle = title ? `${characterName}'s ${title}` : `${characterName}'s ${genre.charAt(0).toUpperCase() + genre.slice(1)} Adventure`;
-  }
-  
-  displayTitle = displayTitle.toUpperCase()
-  
-  // Calculate responsive text positioning based on title.png dimensions
-  const titleBgAspectRatio = 2.5;
-  const titleBgHeight = titleFrameHeight;
-  const titleBgWidth = titleBgHeight * titleBgAspectRatio;
-  const titleBgX = titleFrameX + (titleFrameWidth - titleBgWidth) / 2;
-  
-  // Text area within the title.png background - centered both vertically and horizontally
-  const textAreaWidth = titleBgWidth * 0.7; // Use 70% of title.png width for text
-  const textAreaX = titleBgX + (titleBgWidth * 0.15); // 15% margin from left edge for better centering
-  
-  // Responsive font sizing
-  let titleFontSize = Math.min(38, Math.floor(titleBgHeight * 0.4)); // Responsive font size
-  pdf.setFontSize(titleFontSize);
-  
-  // Split title to fit within title.png background
-  let titleLines = pdf.splitTextToSize(displayTitle, textAreaWidth);
-  
-  // Adjust font size if text is too long
-  if (titleLines.length > 2) {
-    titleFontSize = Math.min(38, Math.floor(titleBgHeight * 0.45));
-    pdf.setFontSize(titleFontSize);
-    titleLines = pdf.splitTextToSize(displayTitle, textAreaWidth);
-  }
-  
-  // Perfect center text within title.png background
-  const lineHeight = 10;
-  const totalTextHeight = titleLines.length * lineHeight;
-  const textStartY = titleFrameY + (titleBgHeight - totalTextHeight) / 2; // Perfect vertical center
-  
-  titleLines.forEach((line, i) => {
-    const lineY = textStartY + (i * lineHeight);
-    
-    // Add shadow effect - draw black text slightly offset
-    pdf.setTextColor(0, 0, 0); // Black shadow
-    pdf.text(line, titleBgX + (titleBgWidth / 2) + 1, lineY + 1, { align: 'center' });
-    
-    // Draw main text in bright yellow on top
-    pdf.setTextColor(255, 193, 7); // Bright yellow color
-    pdf.text(line, titleBgX + (titleBgWidth / 2), lineY, { align: 'center' });
-  });
-  
-  // Add footer - "Powered by" text at bottom right with white background
-  addPoweredByText(pdf, pageWidth, pageHeight);
+  // Title section removed - no longer needed
   
   // Start comic panels on new page
   pdf.addPage();
@@ -934,14 +847,7 @@ export const generateCuratedStoryPDF = async (
         pdf.text('...', textX + textWidth - 10, lastLineY);
       }
       
-      // Page number
-      const pageCircleX = pageWidth - 15;
-      const pageCircleY = pageHeight - 5;
-      pdf.setFillColor(255, 182, 193);
-      pdf.circle(pageCircleX, pageCircleY, 8, 'F');
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(10);
-      pdf.text(`${panelIndex + 1}`, pageCircleX, pageCircleY + 3, { align: 'center' });
+      // Page number removed - no longer needed
     }
   } else if (viewMode === 'fullscreen') {
     // Fullscreen view: 1 panel per page with image as full background
@@ -953,6 +859,13 @@ export const generateCuratedStoryPDF = async (
       const panelText = panelTexts[panelIndex];
       const imageUrl = imageUrls[panelIndex];
       const cleanText = panelText.replace(/\*\*Panel \d+:\*\*/, '').trim();
+      
+      // Remove blank lines and normalize text
+      const normalizedText = cleanText
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .join('\n');
       
       // Add panel image as full background
       if (imageUrl && imageUrl !== 'undefined' && imageUrl !== null) {
@@ -971,80 +884,79 @@ export const generateCuratedStoryPDF = async (
         pdf.rect(0, 0, pageWidth, pageHeight, 'F');
       }
       
-      // Add gradient background behind text at bottom of page
-      const gradientStartY = pageHeight * 0.75; // Start at 3/4th of page
-      const gradientHeight = pageHeight - gradientStartY;
+      // Calculate text dimensions first to determine gradient height
+      const textMargin = 8; // Reduced from 20 to 8 for minimal margins like the image
+      const textWidth = pageWidth - (textMargin * 2);
+      
+      // Start with a reasonable font size and line height
+      let fontSize = 10; // Match ComicPanel text-[10px]
+      let lineHeight = 6; // Reduced from 8 to 6 for tighter spacing like the image
+      
+      // Calculate how much space the text needs
+      pdf.setFontSize(fontSize);
+      const textLines = pdf.splitTextToSize(normalizedText, textWidth);
+      const totalTextHeight = textLines.length * lineHeight;
+      
+      // If text is too long, reduce font size and recalculate
+      while (totalTextHeight > pageHeight * 0.25 && fontSize > 8) { // Increased from 0.2 to 0.25 for more text space
+        fontSize--;
+        pdf.setFontSize(fontSize);
+        const newTextLines = pdf.splitTextToSize(normalizedText, textWidth);
+        lineHeight = Math.max(4, fontSize * 0.6); // Reduced from 0.7 to 0.6 for tighter spacing
+        const newTotalHeight = newTextLines.length * lineHeight;
+        if (newTotalHeight <= pageHeight * 0.25) {
+          break;
+        }
+      }
+      
+      // Recalculate final text lines with optimal settings
+      const finalTextLines = pdf.splitTextToSize(normalizedText, textWidth);
+      const finalLineHeight = Math.max(4, fontSize * 0.6);
+      const finalTextHeight = finalTextLines.length * finalLineHeight;
+      
+      // Position gradient background to fit text perfectly with minimal padding
+      const gradientStartY = pageHeight - finalTextHeight - 16; // Reduced from 20 to 16 for minimal padding
+      const gradientHeight = finalTextHeight + 16; // Reduced from 20 to 16 for minimal padding
       
       // Load and add gradient background image
       try {
         const gradientDataUrl = await imageToDataURL('/pdf-bg/gradient.png');
         pdf.addImage(gradientDataUrl, 'PNG', 0, gradientStartY, pageWidth, gradientHeight);
+        pdf.setGState(pdf.GState({ opacity: 0.5 }));
       } catch (error) {
         console.log('🔍 Curated PDF Generator: Failed to add gradient background, using fallback', error);
-        // Fallback to a simple gradient effect
-        pdf.setFillColor(0, 0, 0);
+        // Fallback to a translucent gradient effect with 0.3 opacity
+        pdf.setFillColor(245, 245, 245); // Very light gray to simulate transparency (245/255 ≈ 0.96, so 4% opacity)
         pdf.rect(0, gradientStartY, pageWidth, gradientHeight, 'F');
       }
       
-      // Add panel text at bottom with white color and subtle shadow
-      const textMargin = 20;
-      const textWidth = pageWidth - (textMargin * 2);
-      const textY = gradientStartY + 20; // Position text in the bottom area
+      // Add panel text with minimal padding/margins
+      const textY = gradientStartY + 8; // Reduced from 20 to 8 for minimal top margin like the image
       
       useComicStyleFont(pdf, 'normal');
-      pdf.setFontSize(12); // Smaller font size
+      pdf.setFontSize(10); // Match ComicPanel text-[10px]
       
-      // Add subtle text shadow for readability
-      pdf.setTextColor(0, 0, 0); // Black shadow
-      const shadowOffset = 1;
-      const textLines = pdf.splitTextToSize(cleanText, textWidth);
-      const lineHeight = 8;
-      const maxLines = Math.floor((gradientHeight - 40) / lineHeight);
-      const displayLines = textLines.slice(0, maxLines);
-      
-      // Draw shadow first
-      for (let lineIndex = 0; lineIndex < displayLines.length; lineIndex++) {
-        const lineY = textY + (lineIndex * lineHeight);
-        pdf.text(displayLines[lineIndex], textMargin + shadowOffset, lineY + shadowOffset);
+      // Draw text in white like ComicPanel (no shadow)
+      pdf.setTextColor(255, 255, 255); // White text like ComicPanel text-white
+      for (let lineIndex = 0; lineIndex < finalTextLines.length; lineIndex++) {
+        const lineY = textY + (lineIndex * finalLineHeight);
+        pdf.text(finalTextLines[lineIndex], textMargin, lineY);
       }
       
-      // Draw main text
-      pdf.setTextColor(255, 255, 255); // White text
-      for (let lineIndex = 0; lineIndex < displayLines.length; lineIndex++) {
-        const lineY = textY + (lineIndex * lineHeight);
-        pdf.text(displayLines[lineIndex], textMargin, lineY);
-      }
-      
-      if (textLines.length > maxLines) {
-        const lastLineY = textY + ((maxLines - 1) * lineHeight);
-        pdf.text('...', textMargin + textWidth - 20, lastLineY);
-      }
-      
-      // Add page number
-      const pageCircleX = pageWidth - 25;
-      const pageCircleY = pageHeight - 25;
-      pdf.setFillColor(255, 255, 255);
-      pdf.setDrawColor(0, 0, 0);
-      pdf.setLineWidth(1);
-      pdf.circle(pageCircleX, pageCircleY, 12, 'F');
-      pdf.circle(pageCircleX, pageCircleY, 12);
-      pdf.setTextColor(0, 0, 0);
-      pdf.setFontSize(10);
-      useComicStyleFont(pdf, 'bold');
-      pdf.text(`${panelIndex + 1}`, pageCircleX, pageCircleY + 3, { align: 'center' });
+      // Page number removed - no longer needed
     }
   } else {
     // Grid view: 2x2 grid (4 panels per page) - Optimized for larger panels and smaller font
-    const reducedMargin = 12; // Reduced from 20 to 12
+    const reducedMargin = 8; // Reduced from 12 to 8 for tighter spacing
     const panelWidth = (pageWidth - reducedMargin * 3) / 2;
     const panelHeight = 125; // Reduced from 130 to 125 to fit within page
-    const panelsPerPage = 4;
+    const panelsPerPage = 4; // 2x2 grid per page
     const totalPages = Math.ceil(panelTexts.length / panelsPerPage);
     
     for (let pageNum = 0; pageNum < totalPages; pageNum++) {
       if (pageNum > 0) { pdf.addPage(); }
       
-      const startY = 25; // Reduced from 35 to 25
+      const startY = 20; // Reduced from 25 to 20 for more space
       const startPanelIndex = pageNum * panelsPerPage;
       const endPanelIndex = Math.min(startPanelIndex + panelsPerPage, panelTexts.length);
       
@@ -1090,7 +1002,7 @@ export const generateCuratedStoryPDF = async (
         
         if (imageUrl && imageUrl !== 'undefined' && imageUrl !== null) {
           try {
-            const imageDataUrl = await imageToDataURL(imageUrl);
+            const imageDataUrl = imageUrl //await imageToDataURL(imageUrl);
             pdf.addImage(imageDataUrl, 'JPEG', imageX, imageY, imageWidth, imageHeight);
           } catch (error) {
             pdf.setFillColor(245, 245, 245);
@@ -1111,16 +1023,16 @@ export const generateCuratedStoryPDF = async (
         
         // Text
         const textX = x + 3;
-        const textY = imageY + imageHeight + 8; // Reduced from 10 to 8
+        const textY = imageY + imageHeight + 6; // Reduced from 8 to 6 for tighter spacing
         const textWidth = panelWidth - 6;
-        const textHeight = panelHeight - (imageHeight + 12); // Reduced from 15 to 12
+        const textHeight = panelHeight - (imageHeight + 10); // Reduced from 12 to 10 for more text space
         pdf.setFillColor(255, 255, 255);
         pdf.rect(textX, textY - 2, textWidth, textHeight, 'F');
-        pdf.setFontSize(11); // Increased from 10 to 11 for better readability
+        pdf.setFontSize(9); // Reduced from 11 to 9 for smaller text to fit more
         useComicStyleFont(pdf, 'normal');
         pdf.setTextColor(255, 193, 7); // Bright yellow for panel text
         const textLines = pdf.splitTextToSize(cleanText, textWidth - 4);
-        const lineHeight = 14; // Reduced from 5 to 4
+        const lineHeight = 3; // Reduced from 14 to 3 for tighter line spacing
         const maxLines = Math.floor(textHeight / lineHeight);
         const displayLines = textLines.slice(0, maxLines);
         for (let lineIndex = 0; lineIndex < displayLines.length; lineIndex++) {
@@ -1135,14 +1047,7 @@ export const generateCuratedStoryPDF = async (
         }
       }
       
-      // Page number
-      const pageCircleX = pageWidth - 15;
-      const pageCircleY = pageHeight - 5;
-      pdf.setFillColor(255, 182, 193);
-      pdf.circle(pageCircleX, pageCircleY, 8, 'F');
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(8);
-      pdf.text(`${pageNum + 1}`, pageCircleX, pageCircleY + 3, { align: 'center' });
+      // Page number removed - no longer needed
     }
   }
   
