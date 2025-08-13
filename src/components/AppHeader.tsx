@@ -19,30 +19,30 @@ interface AppHeaderProps {
 
 export const SAMPLE_PDFS = [
   {
-    name: "Elisha's Adventure",
-    url: "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/web_assets/Elisha-comic-story.pdf",
-    description: "See Elisha's exciting expedition with her friends!",
-    character: "Elisha"
+    name: "Josh and Freedom Fighters of India",
+    url: "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/SYSTEM_ASSET/Josh-freedom-fighters-fullscreen.pdf",
+    description: "See Josh and the freedom fighters of India!",
+    character: "Josh"
   },
   {
-    name: "Shivaay's Journey",
-    url: "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/web_assets/shivaay-comic-story+(1).pdf",
+    name: "Kiara's fairytale",
+    url: "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/SYSTEM_ASSET/Kiara-comic-split.pdf",
     description: "Discover how Shivaay embarks on an exciting journey!",
-    character: "Shivaay"
+    character: "Kiara"
   }
 ];
 
 export const SAMPLE_PDFS_US = [
   {
-    name: "Josh's Mystery",
-    url: "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/SYSTEM_ASSET/Josh-mystery-comic-fullscreen.pdf",
-    description: "See Josh and the secret of starlit!",
+    name: "Josh and Freedom Fighters of India",
+    url: "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/SYSTEM_ASSET/Josh-freedom-fighters-fullscreen.pdf",
+    description: "See Josh and the freedom fighters of India!",
     character: "Josh"
   },
   {
-    name: "Kiara's Adventure",
-    url: "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/SYSTEM_ASSET/kiara-adventure-comic-split.pdf",
-    description: "See Kiara and the quest for hidden treasure!",
+    name: "Kiara's fairytale",
+    url: "https://storymaker-jcool.s3.ap-south-1.amazonaws.com/SYSTEM_ASSET/Kiara-comic-split.pdf",
+    description: "Discover how Shivaay embarks on an exciting journey!",
     character: "Kiara"
   }
 ];

@@ -31,6 +31,17 @@ interface PhotoUploadFieldProps {
   onPhotoChosenForStory?: (photoUrl: string, isCartoon: boolean) => void;
 }
 
+/**
+ * PhotoUploadField Component
+ * 
+ * Handles photo upload, cartoonization, and story photo selection.
+ * 
+ * Auto-Selection Logic:
+ * - When a photo is uploaded AND no cartoon exists → automatically select for story
+ * - When cartoon is removed AND uploaded photo exists → automatically select for story  
+ * - When component initializes AND uploaded photo exists but no cartoon → automatically select for story
+ * - If cartoon exists → don't auto-select original photo (user must choose)
+ */
 const PhotoUploadField: React.FC<PhotoUploadFieldProps> = ({
   photo,
   onPhotoUpload,
@@ -52,15 +63,13 @@ const PhotoUploadField: React.FC<PhotoUploadFieldProps> = ({
 
   // Load photo data from sessionStorage on component mount
   useEffect(() => {
-    console.log('🔄 Loading photo data from sessionStorage...');
     try {
       const savedPhotoData = sessionStorage.getItem('photoData');
       const savedFormData = sessionStorage.getItem('formData');
       
-      console.log('🔍 Raw sessionStorage data:', {
-        photoData: savedPhotoData,
-        formData: savedFormData
-      });
+      console.log('🔍 PhotoUploadField initialization - loading from sessionStorage');
+      console.log('📊 Saved photo data:', savedPhotoData);
+      console.log('📊 Saved form data:', savedFormData);
       
       // Priority 1: Load from photoData (most reliable for photo persistence)
       if (savedPhotoData) {
@@ -101,6 +110,27 @@ const PhotoUploadField: React.FC<PhotoUploadFieldProps> = ({
           console.log('📸 Set preview URL from formData.uploadedPhotoUrl:', formData.uploadedPhotoUrl);
         }
       }
+      
+      // Auto-select uploaded photo for story if no cartoon exists and no selection made yet
+      setTimeout(() => {
+        if (uploadedImageUrl && previewUrl && !selectedForStory && !cartoonImageUrl) {
+          console.log('🎯 Component initialized - auto-selecting uploaded photo for story');
+          setSelectedForStory('original');
+          
+          // Automatically select the uploaded photo for the story
+          if (onPhotoChosenForStory) {
+            onPhotoChosenForStory(previewUrl, false);
+            console.log('📖 Photo auto-selected for story during initialization');
+          }
+          
+          // Save photo data to sessionStorage with auto-selection
+          savePhotoDataToSessionStorage({
+            uploadedImageUrl: uploadedImageUrl,
+            selectedForStory: 'original'
+          });
+        }
+      }, 100); // Small delay to ensure state is properly set
+      
     } catch (error) {
       console.error('❌ Error loading photo data from sessionStorage:', error);
     }
@@ -169,11 +199,30 @@ const PhotoUploadField: React.FC<PhotoUploadFieldProps> = ({
         // Save the uploaded photo URL to form data
         savePhotoUrlToFormData(result.imageUrl);
         
-        // Save photo data to sessionStorage
-        savePhotoDataToSessionStorage({
-          uploadedImageUrl: result.imageUrl,
-          selectedForStory: selectedForStory
-        });
+        // Auto-select the uploaded photo for story ONLY if no cartoon image exists
+        if (!cartoonImageUrl) {
+          console.log('🎯 No cartoon image available, auto-selecting uploaded photo for story');
+          setSelectedForStory('original');
+          
+          // Automatically select the uploaded photo for the story
+          if (onPhotoChosenForStory) {
+            onPhotoChosenForStory(result.imageUrl, false);
+            toast.success('📖 Photo automatically selected for your story!');
+          }
+          
+          // Save photo data to sessionStorage with auto-selection
+          savePhotoDataToSessionStorage({
+            uploadedImageUrl: result.imageUrl,
+            selectedForStory: 'original'
+          });
+        } else {
+          console.log('🎨 Cartoon image exists, not auto-selecting uploaded photo');
+          // Save photo data to sessionStorage without auto-selection
+          savePhotoDataToSessionStorage({
+            uploadedImageUrl: result.imageUrl,
+            selectedForStory: selectedForStory
+          });
+        }
         
         setTimeout(() => {
           setUploadProgress('');
@@ -317,10 +366,28 @@ const PhotoUploadField: React.FC<PhotoUploadFieldProps> = ({
       console.error('❌ Error clearing uploaded photo URL:', error);
     }
     
-    // Update photo data in sessionStorage
-    savePhotoDataToSessionStorage({
-      selectedForStory: null
-    });
+    // When cartoon is removed, auto-select the uploaded photo for story if it exists
+    if (uploadedImageUrl && previewUrl) {
+      console.log('🎯 Cartoon removed, auto-selecting uploaded photo for story');
+      setSelectedForStory('original');
+      
+      // Automatically select the uploaded photo for the story
+      if (onPhotoChosenForStory) {
+        onPhotoChosenForStory(previewUrl, false);
+        toast.success('📖 Photo automatically selected for your story!');
+      }
+      
+      // Save photo data to sessionStorage with auto-selection
+      savePhotoDataToSessionStorage({
+        uploadedImageUrl: uploadedImageUrl,
+        selectedForStory: 'original'
+      });
+    } else {
+      // Update photo data in sessionStorage without auto-selection
+      savePhotoDataToSessionStorage({
+        selectedForStory: null
+      });
+    }
   };
 
   const renderContent = () => {

@@ -26,13 +26,21 @@ const CharacterDetailsForm: React.FC<CharacterDetailsFormProps> = ({
 
   const handleAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    const numValue = parseInt(value);
     
     // Allow empty string for typing
     if (value === '') {
       onInputChange('characterAge', '');
       return;
     }
+    
+    // Strictly validate: only allow digits 0-9
+    if (!/^\d+$/.test(value)) {
+      // If non-numeric characters are entered, don't update the state
+      // This prevents Safari from accepting letters/special chars
+      return;
+    }
+    
+    const numValue = parseInt(value);
     
     // Validate age range (0-18)
     if (numValue < 0) {
@@ -48,6 +56,57 @@ const CharacterDetailsForm: React.FC<CharacterDetailsFormProps> = ({
     }
     
     onInputChange('characterAge', value);
+  };
+
+  // Additional handler to prevent non-numeric input on keydown
+  const handleAgeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Allow: backspace, delete, tab, escape, enter, and navigation keys
+    if ([8, 9, 27, 13, 46, 37, 38, 39, 40].includes(e.keyCode)) {
+      return;
+    }
+    
+    // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+    if (e.ctrlKey && [65, 67, 86, 88].includes(e.keyCode)) {
+      return;
+    }
+    
+    // Allow: numbers 0-9
+    if (e.keyCode >= 48 && e.keyCode <= 57) {
+      return;
+    }
+    
+    // Allow: numpad numbers 0-9
+    if (e.keyCode >= 96 && e.keyCode <= 105) {
+      return;
+    }
+    
+    // Prevent all other keys (letters, special characters, etc.)
+    e.preventDefault();
+  };
+
+  // Handle paste events to filter out non-numeric content
+  const handleAgePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData('text');
+    
+    // Only allow numeric content
+    if (/^\d+$/.test(pastedText)) {
+      const currentValue = characterAge;
+      const newValue = currentValue + pastedText;
+      
+      // Validate the combined value
+      const numValue = parseInt(newValue);
+      if (numValue >= 0 && numValue <= 18) {
+        onInputChange('characterAge', newValue);
+      }
+    }
+  };
+
+  // Helper function to show feedback for invalid input attempts
+  const showInvalidInputFeedback = () => {
+    if (characterAge && !/^\d+$/.test(characterAge)) {
+      toast.error('Please enter only numbers (0-18) for character age');
+    }
   };
 
   const testSessionStorage = () => {
@@ -86,14 +145,25 @@ const CharacterDetailsForm: React.FC<CharacterDetailsFormProps> = ({
         </Label>
         <Input
           id="characterAge"
-          type="number"
-          placeholder="How old is your character?"
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          placeholder="Enter age (0-18)"
           value={characterAge}
           onChange={handleAgeChange}
+          onKeyDown={handleAgeKeyDown}
+          onPaste={handleAgePaste}
+          onBlur={showInvalidInputFeedback}
           className="text-lg p-4 border-2 border-purple-200 focus:border-purple-500 rounded-xl"
-          min="0"
-          max="18"
+          autoComplete="off"
+          spellCheck="false"
         />
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <span>🔢 Only numbers 0-18 allowed</span>
+          {characterAge && !/^\d+$/.test(characterAge) && (
+            <span className="text-red-500 font-medium">⚠️ Invalid input</span>
+          )}
+        </div>
         <p className="text-sm text-gray-500">
           Stories are designed to be age-appropriate for children and teens (0-18 years old)
         </p>
