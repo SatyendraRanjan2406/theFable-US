@@ -448,10 +448,7 @@ export const savePanelsInBulk = async (
         // Unauthorized - redirect to homepage
         console.log('🔒 Unauthorized (401) - redirecting to homepage');
         window.location.href = '/';
-        return {
-          success: false,
-          message: 'Unauthorized - redirected to homepage'
-        };
+        return 
       }
       
       const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));

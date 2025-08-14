@@ -930,13 +930,13 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     //console.log('openaiApiKey from useFormData:', openaiApiKey ? 'YES' : 'NO');
     //console.log('openaiApiKey length:', openaiApiKey?.length);
     //console.log('openaiApiKey preview:', openaiApiKey?.substring(0, 20) + '...');
-    const openaiApiKey1 = "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";
+    const openaiApiKey1 = "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";
     generateOutline(formData, openaiApiKey1);
   };
 
   const handleRegenerateOutlineWithData = () => {
     //console.log('=== DEBUG: handleRegenerateOutlineWithData called ===', openaiApiKey);
-    const openaiApiKey1 = "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";
+    const openaiApiKey1 = "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";
 
     handleRegenerateOutline(formData, openaiApiKey1);
   };
