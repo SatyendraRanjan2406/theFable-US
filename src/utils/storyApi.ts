@@ -200,6 +200,13 @@ export const saveStoryToDatabase = async (
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        // Unauthorized - redirect to homepage
+        console.log('🔒 Unauthorized (401) - redirecting to homepage');
+        window.location.href = '/';
+        throw new Error('Unauthorized - redirected to homepage');
+      }
+      
       const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
       throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
     }
@@ -437,6 +444,16 @@ export const savePanelsInBulk = async (
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        // Unauthorized - redirect to homepage
+        console.log('🔒 Unauthorized (401) - redirecting to homepage');
+        window.location.href = '/';
+        return {
+          success: false,
+          message: 'Unauthorized - redirected to homepage'
+        };
+      }
+      
       const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
       throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
     }
