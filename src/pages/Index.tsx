@@ -2295,14 +2295,14 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
         </section>
 
         {/* Sticky CTA for Mobile */}
-        <div className="fixed bottom-4 left-0 right-0 flex justify-center md:hidden z-40">
+        {/* <div className="fixed bottom-4 left-0 right-0 flex justify-center md:hidden z-40">
           <button 
             onClick={handleCreateStoryClick}
             className="bg-gradient-to-r from-[#EC6B43] to-[#D946EF] text-white px-8 py-3 rounded-full shadow-lg text-lg font-medium hover:from-[#D55A3A] hover:to-[#C026D6] transition-all duration-300"
           >
             Create Your Story Now
           </button>
-        </div>
+        </div> */}
 
         {/* Modals */}
         <LoginModal 
