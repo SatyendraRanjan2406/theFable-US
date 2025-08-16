@@ -2074,7 +2074,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
               className="bg-white border-2 border-[#8D4BE5] text-[#8D4BE5] px-8 py-3 rounded-full shadow-lg text-lg font-medium hover:bg-[#8D4BE5] hover:text-white transition-all duration-300 transform hover:scale-105"
 
             >
-              Create Your Story Now 
+              Create Your Own Story
             </button>
 
             <div className="flex items-center justify-center mt-4 mb-6">
@@ -2094,7 +2094,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
               className="bg-gradient-to-r from-[#EC6B43] to-[#D946EF] text-white px-8 py-3 rounded-full shadow-lg text-lg font-medium hover:from-[#D55A3A] hover:to-[#C026D6] transition-all duration-300 transform hover:scale-105"
 
             >
-              ✨ Choose from ReadyMade Stories ✨ 
+              ✨ Choose from Ready-Made Stories ✨ 
             </button>
             
             {/* <div className="flex items-center justify-center mt-4 mb-6">
@@ -2304,7 +2304,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
             onClick={handleCreateStoryClick}
             className="bg-gradient-to-r from-[#EC6B43] to-[#D946EF] text-white px-8 py-3 rounded-full shadow-lg text-lg font-medium hover:from-[#D55A3A] hover:to-[#C026D6] transition-all duration-300"
           >
-            Create Your Story Now
+            Create Your Own Story
           </button>
         </div> */}
 

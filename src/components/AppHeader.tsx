@@ -220,7 +220,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ currentStep, onCreateStoryClick, 
               className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-lg md:text-xl px-6 md:px-10 py-6 md:py-8 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 animate-soft-blink"
             >
               <Sparkles className="w-6 h-6 mr-3" />
-              CREATE YOUR STORY NOW
+              CREATE YOUR OWN STORY
             </Button>
           </div>
         </div>
