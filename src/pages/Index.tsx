@@ -2076,7 +2076,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
               className="bg-gradient-to-r from-[#EC6B43] to-[#D946EF] text-white px-8 py-3 rounded-full shadow-lg text-lg font-medium hover:from-[#D55A3A] hover:to-[#C026D6] transition-all duration-300 transform hover:scale-105"
 
             >
-              ✨ Choose Freedom Special Story ✨ 
+              ✨ Choose Janmashtami Special Story ✨ 
             </button>
             <div className="flex items-center justify-center mt-4 mb-6">
               <div className="flex-1 h-px bg-gray-300"></div>
