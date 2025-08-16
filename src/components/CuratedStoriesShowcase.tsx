@@ -73,11 +73,11 @@ const CuratedStoriesShowcase: React.FC<CuratedStoriesShowcaseProps> = ({ onStory
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
           <h2 className="text-3xl md:text-4xl font-dm-serif mb-4 text-[#8D4BE5]">
-            Choose from Our Curated Adventures
+            Choose from Our Readymade Stories
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          {/* <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Explore our collection of magical stories designed to spark imagination and create unforgettable memories
-          </p>
+          </p> */}
         </div>
 
         {/* Horizontal Scrolling Container */}

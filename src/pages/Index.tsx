@@ -2065,6 +2065,24 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
               Magical, personalized storybooks where your child appears in beautiful, illustrated adventures. Boost confidence, spark joy, and create lifelong memories.
             </p>
 
+      
+
+            
+
+            <button 
+              onClick={handleCreateStoryClick}
+              className="bg-white border-2 border-[#8D4BE5] text-[#8D4BE5] px-8 py-3 rounded-full shadow-lg text-lg font-medium hover:bg-[#8D4BE5] hover:text-white transition-all duration-300 transform hover:scale-105"
+
+            >
+              Create Your Story Now 
+            </button>
+
+            <div className="flex items-center justify-center mt-4 mb-6">
+              <div className="flex-1 h-px bg-gray-300"></div>
+              <span className="px-4 text-gray-500 font-medium">OR</span>
+              <div className="flex-1 h-px bg-gray-300"></div>
+            </div>
+
             <button 
               onClick={() => {
                 // Scroll to curated stories section
@@ -2076,21 +2094,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
               className="bg-gradient-to-r from-[#EC6B43] to-[#D946EF] text-white px-8 py-3 rounded-full shadow-lg text-lg font-medium hover:from-[#D55A3A] hover:to-[#C026D6] transition-all duration-300 transform hover:scale-105"
 
             >
-              ✨ Choose Janmashtami Special Story ✨ 
-            </button>
-            <div className="flex items-center justify-center mt-4 mb-6">
-              <div className="flex-1 h-px bg-gray-300"></div>
-              <span className="px-4 text-gray-500 font-medium">OR</span>
-              <div className="flex-1 h-px bg-gray-300"></div>
-            </div>
-            
-
-            <button 
-              onClick={handleCreateStoryClick}
-              className="bg-white border-2 border-[#8D4BE5] text-[#8D4BE5] px-8 py-3 rounded-full shadow-lg text-lg font-medium hover:bg-[#8D4BE5] hover:text-white transition-all duration-300 transform hover:scale-105"
-
-            >
-              Create Your Story Now 
+              ✨ Choose from ReadyMade Stories ✨ 
             </button>
             
             {/* <div className="flex items-center justify-center mt-4 mb-6">
@@ -2144,6 +2148,9 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
           </div>
         </section>
 
+        {/* Curated Stories Showcase */}
+        <CuratedStoriesShowcase onStorySelect={handleHomePageCuratedStorySelect} />
+
         {/* Why Parents Love {APP_CONFIG.title} */}
         <section className="max-w-6xl mx-auto py-12 px-4">
           <h2 className="text-2xl md:text-3xl font-semibold mb-8 text-center text-[#333333]">Why Parents Love {APP_CONFIG.title}</h2>
@@ -2179,9 +2186,6 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
             ))}
           </div>
         </section>
-
-        {/* Curated Stories Showcase */}
-        <CuratedStoriesShowcase onStorySelect={handleHomePageCuratedStorySelect} />
 
         {/* Testimonials */}
         <section className="py-16 px-4 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
