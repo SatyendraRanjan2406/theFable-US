@@ -41,7 +41,10 @@ export const APP_CONFIG = {
     originalPrice: parseFloat(import.meta.env.VITE_PAYMENT_ORIGINAL_PRICE || '5.00'),
     currency: import.meta.env.VITE_PAYMENT_CURRENCY || 'INR',
     description: 'Storymaker Premium'
-  }
+  },
+  
+  // Platform configuration
+  platform: import.meta.env.VITE_PLATFORM || 'IN'
 };
 
 // Helper function to get full app title

@@ -195,7 +195,8 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
   useEffect(() => {
     const loadCuratedStories = async () => {
       try {
-        const response = await fetch(BASE_URL+'/api/auth/curated-stories/');
+        console.log('📚 Loading curated stories with platform:', APP_CONFIG.platform);
+        const response = await fetch(`${BASE_URL}/api/auth/curated-stories/?platform=${APP_CONFIG.platform}`);
         if (response.ok) {
           const data = await response.json();
           setCuratedStories(data);
@@ -930,13 +931,13 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     //console.log('openaiApiKey from useFormData:', openaiApiKey ? 'YES' : 'NO');
     //console.log('openaiApiKey length:', openaiApiKey?.length);
     //console.log('openaiApiKey preview:', openaiApiKey?.substring(0, 20) + '...');
-    const openaiApiKey1 = "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";
+    const openaiApiKey1 = "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";
     generateOutline(formData, openaiApiKey1);
   };
 
   const handleRegenerateOutlineWithData = () => {
     //console.log('=== DEBUG: handleRegenerateOutlineWithData called ===', openaiApiKey);
-    const openaiApiKey1 = "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";
+    const openaiApiKey1 = "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";
 
     handleRegenerateOutline(formData, openaiApiKey1);
   };
@@ -1742,6 +1743,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
                 photo_url: photoUrl,
                 curated_story_id: selectedCuratedStoryForForm?.id,
                 curated_story_title: selectedCuratedStoryForForm?.title,
+                platform: APP_CONFIG.platform,
               };
 
               // Only add user_id if user is authenticated
@@ -1761,6 +1763,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
               // For non-authenticated users, don't send user_id at all
 
               console.log('Calling curated story generation API with payload:', payload);
+              console.log('🌍 Platform being sent:', APP_CONFIG.platform);
 
               // Update progress
               setCuratedGenerationProgress(2);

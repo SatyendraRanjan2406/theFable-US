@@ -9,6 +9,7 @@ import StoryActions from '@/components/StoryActions';
 import PricingModal from '@/components/PricingModal';
 import { trackCheckoutStarted, trackPurchaseCompleted, trackStoryRegenerated, trackStoryCustomized, trackDownloadPDFButtonClicked } from '@/utils/gtm';
 import { generateCuratedStoryPDF } from '@/utils/pdfGenerator';
+import { APP_CONFIG } from '@/config/app';
 
 interface CuratedPanel {
   id: string;
@@ -588,9 +589,10 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
     
     try {
       console.log('🔄 Refreshing curated story data for story_id:', normalizedResult.story_id);
+      console.log('🌍 Platform being sent:', APP_CONFIG.platform);
       
       // Fetch the latest story data
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/curated-stories/${normalizedResult.story_id}/`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/curated-stories/${normalizedResult.story_id}/?platform=${APP_CONFIG.platform}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

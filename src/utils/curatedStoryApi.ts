@@ -1,4 +1,5 @@
 import { BASE_URL } from '@/config/api';
+import { APP_CONFIG } from '@/config/app';
 
 export interface CuratedStoryRequest {
   characterName: string;
@@ -31,6 +32,7 @@ export interface CuratedStoryResponse {
 export const generateCuratedStory = async (requestData: CuratedStoryRequest): Promise<CuratedStoryResponse> => {
   try {
     console.log('🚀 Generating curated story with data:', requestData);
+    console.log('🌍 Platform being sent:', APP_CONFIG.platform);
     
     const response = await fetch(`${BASE_URL}/api/auth/curated-stories/generate/`, {
       method: 'POST',
@@ -44,6 +46,7 @@ export const generateCuratedStory = async (requestData: CuratedStoryRequest): Pr
         photo_url: requestData.photoUrl || '',
         curated_story_id: requestData.curatedStoryId,
         curated_story_title: requestData.curatedStoryTitle,
+        platform: APP_CONFIG.platform,
         ...(requestData.userId && { user_id: requestData.userId }), // Only include user_id if it exists
       }),
     });
@@ -73,7 +76,8 @@ export const generateCuratedStory = async (requestData: CuratedStoryRequest): Pr
 // Fetch curated stories for home page display
 export const fetchCuratedStories = async (): Promise<any[]> => {
   try {
-    const response = await fetch(`${BASE_URL}/api/auth/curated-stories/`, {
+    console.log('📚 Fetching curated stories with platform:', APP_CONFIG.platform);
+    const response = await fetch(`${BASE_URL}/api/auth/curated-stories/?platform=${APP_CONFIG.platform}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
