@@ -215,11 +215,11 @@ const ComicBook: React.FC<ComicBookProps> = ({
     window.addEventListener('payment-success', handlePaymentSuccessEvent);
     
     // Also listen for Stripe payment success events
-    window.addEventListener('stripe-payment-success', handlePaymentSuccessEvent);
+    // window.addEventListener('stripe-payment-success', handlePaymentSuccessEvent);
 
     return () => {
       window.removeEventListener('payment-success', handlePaymentSuccessEvent);
-      window.removeEventListener('stripe-payment-success', handlePaymentSuccessEvent);
+      // window.removeEventListener('stripe-payment-success', handlePaymentSuccessEvent);
     };
   }, [handlePaymentSuccess]);
 

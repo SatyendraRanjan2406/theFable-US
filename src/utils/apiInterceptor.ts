@@ -38,7 +38,7 @@ export const apiFetch = async (url: string, options: ApiFetchOptions = {}) => {
     }
 
     const response = await fetch(url, config);
-
+    console.log('🔐 API Interceptor: Response status:', response);
     if (response.status === 401) {
       // Unauthorized. Dispatch a global event for the AuthProvider to handle.
       // This decouples the API layer from the authentication state management.
