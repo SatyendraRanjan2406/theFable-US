@@ -932,13 +932,13 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     //console.log('openaiApiKey from useFormData:', openaiApiKey ? 'YES' : 'NO');
     //console.log('openaiApiKey length:', openaiApiKey?.length);
     //console.log('openaiApiKey preview:', openaiApiKey?.substring(0, 20) + '...');
-    const openaiApiKey1 = "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";
+    const openaiApiKey1 = import.meta.env.VITE_OPENAI_API_KEY;
     generateOutline(formData, openaiApiKey1);
   };
 
   const handleRegenerateOutlineWithData = () => {
     //console.log('=== DEBUG: handleRegenerateOutlineWithData called ===', openaiApiKey);
-    const openaiApiKey1 = "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";
+    const openaiApiKey1 = import.meta.env.VITE_OPENAI_API_KEY;
 
     handleRegenerateOutline(formData, openaiApiKey1);
   };
