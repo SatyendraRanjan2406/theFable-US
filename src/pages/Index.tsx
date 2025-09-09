@@ -131,6 +131,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
   
 
   useEffect(() => {
+    debugger
     getSamplePdfs().then((pdfs) => {
       setSamplePdfs(pdfs);
     });

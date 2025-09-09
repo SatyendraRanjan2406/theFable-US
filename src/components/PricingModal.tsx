@@ -174,7 +174,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
       // Trigger payment success callback
       setPaymentVerifiedWithLog(true, 'Stripe payment verified successfully');
       onPaymentSuccess();
-      
+      debugger
       // Dispatch custom payment success event for ComicBook component
       window.dispatchEvent(new CustomEvent('payment-success', {
         detail: { sessionId, orderId: verificationResult.order_id }

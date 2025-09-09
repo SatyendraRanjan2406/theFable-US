@@ -235,11 +235,11 @@ const ComicBook: React.FC<ComicBookProps> = ({
 
   const handleDownloadPDF = async (downloadViewMode?: 'grid' | 'split' | 'fullscreen') => {
     // // // Check payment status first
-    if (!isPaymentComplete()) {
-      onUnlockRequest?.();
-      trackCheckoutStarted('unlock_now_generate_pdf_button', 49);
-      return;
-    }
+    // if (!isPaymentComplete()) {
+    //   onUnlockRequest?.();
+    //   trackCheckoutStarted('unlock_now_generate_pdf_button', 49);
+    //   return;
+    // }
     // If this is a curated story, use the curated download handler
     if (isCuratedStory && onCuratedDownloadPDF) {
       console.log('🔍 Using curated story PDF download handler');
