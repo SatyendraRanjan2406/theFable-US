@@ -210,7 +210,7 @@ const ComicBook: React.FC<ComicBookProps> = ({
       console.log('🎨 ComicBook: Payment success event received');
       handlePaymentSuccess();
     };
-
+    debugger;
     // Listen for custom payment success events
     window.addEventListener('payment-success', handlePaymentSuccessEvent);
     

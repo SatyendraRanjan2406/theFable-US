@@ -25,6 +25,7 @@ import { StoryData } from '@/utils/types/storyTypes';
 import LoginModal from '@/components/LoginModal';
 import { useAuth } from '@/hooks/useAuth';
 import Footer from '@/components/Footer';
+import PaymentConfirmedModal from '@/components/story-preview/PaymentConfirmedModal';
 
 import { trackPhotosRegenerated, trackStoryRegenerated, trackStoryTemplateSelected } from '@/utils/gtm';
 import { SAMPLE_PDFS } from '@/components/AppHeader';
@@ -127,6 +128,8 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const [paymentConfirmedOpen, setPaymentConfirmedOpen] = useState(false);
+  const [showPaymentConfirmedForEmailFlow, setShowPaymentConfirmedForEmailFlow] = useState(false);
   
 
   useEffect(() => {
@@ -931,13 +934,13 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     //console.log('openaiApiKey from useFormData:', openaiApiKey ? 'YES' : 'NO');
     //console.log('openaiApiKey length:', openaiApiKey?.length);
     //console.log('openaiApiKey preview:', openaiApiKey?.substring(0, 20) + '...');
-    const openaiApiKey1 = "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";
+    const openaiApiKey1 = "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"
     generateOutline(formData, openaiApiKey1);
   };
 
   const handleRegenerateOutlineWithData = () => {
     //console.log('=== DEBUG: handleRegenerateOutlineWithData called ===', openaiApiKey);
-    const openaiApiKey1 = "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";
+    const openaiApiKey1 = "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"
 
     handleRegenerateOutline(formData, openaiApiKey1);
   };
@@ -1195,7 +1198,6 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     import('@/utils/gtm').then(({ trackCheckoutStarted }) => {
       trackCheckoutStarted('unlock_now_panels_button', 49);
     });
-    
     setIsPricingModalOpen(true);
   };
 
@@ -1433,6 +1435,16 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     setIsCreatingMagic(true);
     setIsGeneratingImages(true);
     setIsPaid(true); // <-- Actually set isPaid to true here
+    
+    // Open confirmation modal only for email button initiated flow
+    try {
+      const initiatedFromEmailFlow = localStorage.getItem('emailflow') === '1';
+      if (initiatedFromEmailFlow || showPaymentConfirmedForEmailFlow) {
+        setPaymentConfirmedOpen(true);
+        localStorage.removeItem('emailflow');
+        setShowPaymentConfirmedForEmailFlow(false);
+      }
+    } catch {}
     
     // Step 2: Calculate total panels and unlock ALL panels immediately
     const storyToProcess = storybookText || generatedStory;
@@ -1969,6 +1981,8 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
         isCartoonSelectedForStory={formData.isCartoonSelectedForStory}
         error={Object.keys(imageGenerationErrors).length > 0}
         onRetry={handleRetryImageGeneration}
+        isPaid={isPaid}
+        onUnlockRequest={handleUnlockRequest}
       />
     );
   } else if (step === 'final' || currentStep === 'final') {
@@ -2360,6 +2374,8 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
         isProcessing={isGeneratingPremiumContent}
         storyId={storyId}
       />
+
+      <PaymentConfirmedModal open={paymentConfirmedOpen} onClose={() => setPaymentConfirmedOpen(false)} />
 
       <LoginModal 
         isOpen={isLoginModalOpen} 

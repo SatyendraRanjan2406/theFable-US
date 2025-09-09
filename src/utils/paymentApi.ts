@@ -260,7 +260,9 @@ export const handleFailedPayment = async (
       failure_reason: failureReason
     };
 
-    await updateOrderStatus(updateData);
+      await updateOrderStatus(updateData);
+
+      
     console.log('✅ Failed payment status updated successfully');
   } catch (error) {
     console.error('❌ Failed to update failed payment status:', error);

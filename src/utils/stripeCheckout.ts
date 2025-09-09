@@ -38,6 +38,7 @@ export const openStripeCheckoutInPopup = async (options: StripeCheckoutOptions) 
           
           // Check for payment success in localStorage
           const paymentSuccess = localStorage.getItem('stripe_payment_success');
+          
           if (paymentSuccess) {
             localStorage.removeItem('stripe_payment_success');
             console.log('✅ Stripe payment completed successfully');

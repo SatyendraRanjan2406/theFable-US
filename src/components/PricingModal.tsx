@@ -136,7 +136,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
       // Verify the payment with backend
       verifyStripePayment(sessionId);
     };
-
+  
     window.addEventListener('stripe-payment-success', handleStripePaymentSuccess as EventListener);
 
     return () => {
@@ -312,8 +312,8 @@ const updatePaymentStatus = async (orderId: string, status: string) => {
     setPaymentProcessing(true);
     
     try {
-      const paymentConfig = getPaymentConfig();
-      const orderRequest: CreateOrderRequest = {
+       const paymentConfig = getPaymentConfig();
+       const orderRequest: CreateOrderRequest = {
         amount: paymentConfig.amount,
         description: paymentConfig.description,
         currency: paymentConfig.currency, // This will be overridden by payment mode in the API
@@ -330,23 +330,32 @@ const updatePaymentStatus = async (orderId: string, status: string) => {
         orderRequest.guest_email = guestDetails.email;
         orderRequest.guest_phone = phoneNumber; // Use the processed phone number with +91 prefix
       }
-      debugger;
       const orderDetails = await createPaymentOrder(orderRequest, isAuthenticated);
-      debugger;
+
       console.log('📋 Order details received:', orderDetails);
       console.log('💳 Payment mode:', orderDetails.payment_mode);
 
       // Handle payment based on payment mode
       if (orderDetails.payment_mode === 'stripe') {
+
         console.log('🔵 Processing Stripe payment...');
+
         // Handle Stripe payment
         await handleStripePayment(orderDetails);
-      } else {
-        console.log('🟡 Processing Razorpay payment...');
-        debugger;
-        // Handle Razorpay payment
-        await handleRazorpayPayment(orderDetails);
+
       }
+      
+      else {
+
+        console.log('🟡 Processing Razorpay payment...');
+
+        // Handle Razorpay payment
+        const razorpayResponse = await handleRazorpayPayment(orderDetails);
+
+        console.log('🟡 Razorpay payment response:', razorpayResponse);
+      }
+
+
     } catch (error) {
       console.error('Error creating payment order:', error);
       toast.error('Failed to create payment order. Please try again.');
@@ -392,7 +401,6 @@ const updatePaymentStatus = async (orderId: string, status: string) => {
 
   // Handle Razorpay payment
   const handleRazorpayPayment = async (orderDetails: CreateOrderResponse) => {
-    debugger
     const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID, // Use environment variable for key
         amount: orderDetails.amount,
@@ -480,7 +488,10 @@ const updatePaymentStatus = async (orderId: string, status: string) => {
 
             logPaymentFlow('Verifying payment with backend', verificationData);
             console.log('🔍 Payment verification request:', verificationData);
+
+            // verify razorpay payment
             const verificationResult = await verifyPayment(verificationData);
+
             console.log('🔍 Payment verification response:', verificationResult);
             
             if (verificationResult.verified && verificationResult.status === 'success') {
@@ -501,8 +512,13 @@ const updatePaymentStatus = async (orderId: string, status: string) => {
                 return;
               }
               
-                          logPaymentFlow('Payment verified successfully', verificationResult);
+            console.log('🟡 Payment verified successfully', verificationResult);
+
+
+            logPaymentFlow('Payment verified successfully', verificationResult);
+
             console.log('✅ PAYMENT SUCCESS - Starting image generation...');
+
             setPaymentVerifiedWithLog(true, 'Payment verification successful');
               toast.success('Payment successful! Generating your premium illustrations...');
               
@@ -513,6 +529,7 @@ const updatePaymentStatus = async (orderId: string, status: string) => {
               
               if (shouldProceed) {
                 console.log('✅ Calling onPaymentSuccess - payment verified and not cancelled/failed/dismissed');
+               
                 onPaymentSuccess();
                 
                 // Dispatch custom payment success event for ComicBook component
@@ -543,6 +560,7 @@ const updatePaymentStatus = async (orderId: string, status: string) => {
               );
               // Call the cancellation handler to reset frontend state
               onPaymentCancellation?.();
+
               const tips = getPaymentTroubleshootingTips(verificationResult.error_message || '');
               console.error('Troubleshooting tips:', tips);
               toast.error('Payment verification failed. Please contact support.');
@@ -631,6 +649,7 @@ const updatePaymentStatus = async (orderId: string, status: string) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full mx-4">
+
         <h2 className="text-2xl font-bold mb-4 text-center">
           {showGuestForm ? 'Enter Your Details' : 'Unlock All Illustrations'}
         </h2>
