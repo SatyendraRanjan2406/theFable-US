@@ -215,11 +215,11 @@ const ComicBook: React.FC<ComicBookProps> = ({
     window.addEventListener('payment-success', handlePaymentSuccessEvent);
     
     // Also listen for Stripe payment success events
-    window.addEventListener('stripe-payment-success', handlePaymentSuccessEvent);
+    // window.addEventListener('stripe-payment-success', handlePaymentSuccessEvent);
 
     return () => {
       window.removeEventListener('payment-success', handlePaymentSuccessEvent);
-      window.removeEventListener('stripe-payment-success', handlePaymentSuccessEvent);
+      // window.removeEventListener('stripe-payment-success', handlePaymentSuccessEvent);
     };
   }, [handlePaymentSuccess]);
 
@@ -235,11 +235,11 @@ const ComicBook: React.FC<ComicBookProps> = ({
 
   const handleDownloadPDF = async (downloadViewMode?: 'grid' | 'split' | 'fullscreen') => {
     // // // Check payment status first
-    if (!isPaymentComplete()) {
-      onUnlockRequest?.();
-      trackCheckoutStarted('unlock_now_generate_pdf_button', 49);
-      return;
-    }
+    // if (!isPaymentComplete()) {
+    //   onUnlockRequest?.();
+    //   trackCheckoutStarted('unlock_now_generate_pdf_button', 49);
+    //   return;
+    // }
     // If this is a curated story, use the curated download handler
     if (isCuratedStory && onCuratedDownloadPDF) {
       console.log('🔍 Using curated story PDF download handler');

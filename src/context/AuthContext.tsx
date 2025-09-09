@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, createContext, ReactNode } from 'react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -16,15 +17,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }): JSX.Element
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [storyId, setStoryId] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
+  const navigate = useNavigate();
 
   const logout = useCallback(() => {
     // Clean up all authentication-related localStorage items
     localStorage.removeItem('authToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('login_success');
+    localStorage.clear();
     setIsAuthenticated(false);
     setStoryId(null); // Clear story ID on logout
     toast.success('👋 Successfully logged out!');
+    navigate("/");
+
   }, []);
 
   useEffect(() => {

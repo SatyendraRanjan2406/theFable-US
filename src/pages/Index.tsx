@@ -32,6 +32,7 @@ import { SAMPLE_PDFS } from '@/components/AppHeader';
 import { BASE_URL } from '@/config/api';
 import { APP_CONFIG, getCarouselImages } from '@/config/app';
 import { getSamplePdfs } from '@/utils/domainUtils';
+import { debug } from 'console';
 
 
 // Carousel images for hero section - configurable from environment variables
@@ -133,6 +134,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
   
 
   useEffect(() => {
+    debugger
     getSamplePdfs().then((pdfs) => {
       setSamplePdfs(pdfs);
     });
@@ -378,7 +380,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
           console.log('💰 Story data isPaid type:', typeof storyData.isPaid);
           console.log('💰 Story data is_paid type:', typeof storyData.is_paid);
           
-
+          debugger
           
           // Store panels data for ComicBook component
           setPanelsData(panels);
@@ -934,13 +936,13 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     //console.log('openaiApiKey from useFormData:', openaiApiKey ? 'YES' : 'NO');
     //console.log('openaiApiKey length:', openaiApiKey?.length);
     //console.log('openaiApiKey preview:', openaiApiKey?.substring(0, 20) + '...');
-    const openaiApiKey1 = "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"
+    const openaiApiKey1 = import.meta.env.VITE_OPENAI_API_KEY;
     generateOutline(formData, openaiApiKey1);
   };
 
   const handleRegenerateOutlineWithData = () => {
     //console.log('=== DEBUG: handleRegenerateOutlineWithData called ===', openaiApiKey);
-    const openaiApiKey1 = "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"
+    const openaiApiKey1 = import.meta.env.VITE_OPENAI_API_KEY;
 
     handleRegenerateOutline(formData, openaiApiKey1);
   };
@@ -1040,7 +1042,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     setStorybookImages(images);
     setIsGeneratingImages(false);
     setImageGenerationErrors({});
-    
+    debugger
     // Store panel data for use in ComicBook component
     if (panelData && panelData.length > 0) {
       setPanelsData(panelData);
@@ -1205,7 +1207,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     console.log('=== GENERATE LOCKED IMAGES START ===');
     console.log('🔍 generateLockedImages called with forcePaid:', forcePaid);
     console.log('🔍 Current isPaid state:', isPaid);
-    
+    debugger
     // Check if this is a curated story
     const isCuratedStory = curatedStoryForEdit || curatedStoryResult;
     console.log('🔍 Is curated story:', !!isCuratedStory);
@@ -1222,8 +1224,9 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     debugger
     if (!panelsData || panelsData.length === 0) {
       toast.error("Cannot generate locked images without panel data.");
-      setIsCreatingMagic(false);
-      setIsGeneratingPremiumContent(false);
+      debugger
+      // setIsCreatingMagic(false);
+      // setIsGeneratingPremiumContent(false);
       return;
     }
 
@@ -1283,7 +1286,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
               status: result.panel.status,
               updated_at: new Date().toISOString()
             };
-            
+            debugger
             setPanelsData(prev => prev.map((p, idx) => 
               idx === overallIndex ? updatedPanel : p
             ));
@@ -1305,7 +1308,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     } else {
       // Use AI story generation flow (existing logic)
       console.log('🔄 Using AI story generation flow');
-      
+      debugger
       // 2. Process in chunks of 2
       const chunkSize = 2;
       for (let i = 0; i < panelsToGenerate.length; i += chunkSize) {
@@ -1565,7 +1568,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
         const panelNumber = panelsData?.[panelIndex]?.panel_number;
         
         let result;
-        
+        debugger
         if (isCuratedStory) {
           // Use curated story panel regeneration API (same as FinalCuratedPreview)
           console.log('🔄 Using curated story panel regeneration API');

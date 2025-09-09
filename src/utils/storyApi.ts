@@ -1,5 +1,6 @@
 import { BASE_URL, API_ENDPOINTS } from '@/config/api';
 import { toast } from 'sonner';
+import { apiFetch } from './apiInterceptor';
 
 // New interface for the simple story save API
 export interface SimpleStorySaveRequest {
@@ -190,7 +191,7 @@ export const saveStoryToDatabase = async (
       message
     };
 
-    const response = await fetch(API_ENDPOINTS.auth.stories, {
+    const response = await apiFetch(API_ENDPOINTS.auth.stories, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -198,18 +199,6 @@ export const saveStoryToDatabase = async (
       },
       body: JSON.stringify(requestBody)
     });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        // Unauthorized - redirect to homepage
-        console.log('🔒 Unauthorized (401) - redirecting to homepage');
-        window.location.href = '/';
-        throw new Error('Unauthorized - redirected to homepage');
-      }
-      
-      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-      throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-    }
 
     const result = await response.json();
     console.log('✅ Story saved successfully:', result);
