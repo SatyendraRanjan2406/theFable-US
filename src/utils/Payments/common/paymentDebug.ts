@@ -5,7 +5,7 @@
  * ensuring proper payment verification flow.
  */
 
-import { getPaymentStatus } from './paymentApi';
+import { getPaymentStatus } from '../api/paymentApi';
 
 export interface PaymentDebugInfo {
   orderId: string;

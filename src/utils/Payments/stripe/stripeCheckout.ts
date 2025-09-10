@@ -1,5 +1,6 @@
 // Stripe Checkout Utility
 import { loadStripe } from '@stripe/stripe-js';
+import { PaymentProcessorCallbacks } from '../common';
 
 // Load Stripe with publishable key
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
@@ -11,6 +12,7 @@ export interface StripeCheckoutOptions {
   currency?: string;
   storyId?: string;
   clientSecret?: string;
+  callbacks?: PaymentProcessorCallbacks;
 }
 
 /**
@@ -38,10 +40,17 @@ export const openStripeCheckoutInPopup = async (options: StripeCheckoutOptions) 
           
           // Check for payment success in localStorage
           const paymentSuccess = localStorage.getItem('stripe_payment_success');
+
+
+
           
           if (paymentSuccess) {
+
+            
             localStorage.removeItem('stripe_payment_success');
             console.log('✅ Stripe payment completed successfully');
+
+            debugger;
             // Trigger payment success callback
             window.dispatchEvent(new CustomEvent('stripe-payment-success', {
               detail: { sessionId: options.sessionId }
@@ -60,7 +69,7 @@ export const openStripeCheckoutInPopup = async (options: StripeCheckoutOptions) 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
         body: JSON.stringify({
           stripe_order_id: options.orderId,
@@ -95,6 +104,8 @@ export const openStripeCheckoutInPopup = async (options: StripeCheckoutOptions) 
               if (paymentSuccess) {
                 localStorage.removeItem('stripe_payment_success');
                 console.log('✅ Stripe payment completed successfully');
+
+                debugger;
                 // Trigger payment success callback
                 window.dispatchEvent(new CustomEvent('stripe-payment-success', {
                   detail: { sessionId: sessionData.checkout_session_id || sessionData.sessionId }
@@ -156,14 +167,16 @@ export const openStripeCheckoutInPopup = async (options: StripeCheckoutOptions) 
                 localStorage.removeItem('stripe_payment_success');
                 console.log('✅ Stripe payment completed successfully');
                 // Trigger payment success callback
-                window.dispatchEvent(new CustomEvent('stripe-payment-success', {
-                  detail: { sessionId: sessionData.sessionId }
-                }));
+                options.callbacks?.onSuccess();
+                // window.dispatchEvent(new CustomEvent('stripe-payment-success', {
+                //   detail: { sessionId: sessionData.sessionId }
+                // }));
               }
             }
           }, 1000);
           
           console.log('✅ Stripe checkout opened in popup');
+
           return;
         }
       }
@@ -214,7 +227,7 @@ export const redirectToStripeCheckout = async (options: StripeCheckoutOptions) =
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
         body: JSON.stringify({
           stripe_order_id: options.orderId,

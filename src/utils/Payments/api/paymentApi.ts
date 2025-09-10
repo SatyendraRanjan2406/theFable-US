@@ -26,7 +26,7 @@
 
 import { apiFetch } from '@/utils/apiInterceptor';
 import { API_ENDPOINTS } from '@/config/api';
-import { getPaymentMode } from './paymentConfig';
+import { getPaymentMode } from '../common/paymentConfig';
 
 export interface CreateOrderRequest {
   amount: number;
@@ -420,7 +420,7 @@ export const createOrder = async (
   guestEmail?: string,
   guestPhone?: string
 ): Promise<CreateOrderResponse> => {
-  const isAuthenticated = !!localStorage.getItem('access_token');
+  const isAuthenticated = !!localStorage.getItem('authToken');
   
   if (isAuthenticated) {
     return createLoggedInUserOrder(amount, storyId, description);

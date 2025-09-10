@@ -1,6 +1,6 @@
 // Unified Payment Handler - manages both Stripe and Razorpay payments
 import { getPaymentMode } from './paymentConfig';
-import { CreateOrderResponse } from '@/utils/paymentApi';
+import { CreateOrderResponse } from '../api/paymentApi';
 export interface PaymentHandlerOptions {
   amount: number;
   currency?: string;

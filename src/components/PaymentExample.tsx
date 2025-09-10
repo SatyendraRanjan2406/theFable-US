@@ -1,8 +1,29 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import { createOrder, createLoggedInUserOrder, createGuestUserOrder } from '@/utils/paymentApi';
-import { getPaymentMode } from '@/utils/paymentConfig';
+﻿import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { 
+  // Unified payment functions
+  processPayment,
+  setupStripePaymentListener,
+  setupRazorpayPaymentListener,
+  
+  // Stripe-specific functions
+  openStripeCheckoutInPopup,
+  redirectToStripeCheckout,
+  
+  // RazorPay-specific functions
+  openRazorpayCheckoutInPopup,
+  redirectToRazorpayCheckout,
+  processRazorpayPayment,
+  
+  // Types
+  PaymentProcessorOptions,
+  PaymentProcessorCallbacks,
+  GuestDetails,
+  RazorpayPaymentCallbacks,
+  RazorpayPaymentResult
+} from "@/utils/Payments";
+import { getPaymentMode } from "@/utils/Payments";
 
 interface PaymentExampleProps {
   storyId?: string;
@@ -17,227 +38,324 @@ const PaymentExample: React.FC<PaymentExampleProps> = ({
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMode, setPaymentMode] = useState(getPaymentMode());
-  const [guestName, setGuestName] = useState('John Doe');
-  const [guestEmail, setGuestEmail] = useState('john@example.com');
-  const [guestPhone, setGuestPhone] = useState('+1234567890');
+  const [guestDetails, setGuestDetails] = useState<GuestDetails>({
+    name: "John Doe",
+    email: "john@example.com",
+    phone: "+919876543210"
+  });
 
-  const isAuthenticated = !!localStorage.getItem('access_token');
+  const isAuthenticated = !!localStorage.getItem("authToken");
   
   // Get currency based on payment mode
-  const currency = paymentMode === 'stripe' ? 'USD' : 'INR';
+  const currency = paymentMode === "stripe" ? "USD" : "INR";
 
-  const handleLoggedInPayment = async () => {
+  // Unified payment processing (recommended approach)
+  const handleUnifiedPayment = async () => {
     setIsProcessing(true);
     
     try {
-      // For logged-in users - currency auto-set based on payment mode
-      const orderResponse = await createLoggedInUserOrder(
+      const paymentConfig = {
         amount,
-        storyId,
-        'Storymaker Premium'
-      );
-
-      console.log('Logged-in user order created:', orderResponse);
-      toast.success('Order created successfully!');
+        description: "Storymaker Premium",
+        currency
+      };
       
-      // Handle payment based on payment mode
-      if (orderResponse.payment_mode === 'stripe') {
-        console.log('Stripe order:', {
-          orderId: orderResponse.stripe_order_id,
-          clientSecret: orderResponse.stripe_client_secret,
-          currency: orderResponse.currency,
-        });
-        // Process Stripe payment
-      } else {
-        console.log('Razorpay order:', {
-          orderId: orderResponse.razorpay_order_id,
-          currency: orderResponse.currency,
-        });
-        // Process Razorpay payment
-      }
+      const callbacks: PaymentProcessorCallbacks = {
+        onSuccess: () => {
+          console.log(" Payment successful!");
+          toast.success("Payment successful!");
+          onPaymentSuccess();
+        },
+        onError: (error: string) => {
+          console.error(" Payment error:", error);
+          toast.error(`Payment failed: ${error}`);
+        },
+        onCancel: () => {
+          console.log(" Payment cancelled");
+          toast.info("Payment was cancelled");
+        }
+      };
 
-      onPaymentSuccess();
-    } catch (error: any) {
-      console.error('Payment error:', error);
-      toast.error(error.message || 'Payment failed');
+      const options: PaymentProcessorOptions = {
+        storyId,
+        isAuthenticated,
+        guestDetails: !isAuthenticated ? guestDetails : undefined,
+        callbacks
+      };
+
+      await processPayment(paymentConfig, options);
+
+    } catch (error) {
+      console.error("Payment error:", error);
+      toast.error(error instanceof Error ? error.message : "Payment failed");
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleGuestPayment = async () => {
+  // Stripe-specific payment processing
+  const handleStripePayment = async () => {
     setIsProcessing(true);
     
     try {
-      // For guest users - currency auto-set based on payment mode
-      const orderResponse = await createGuestUserOrder(
+      const paymentConfig = {
         amount,
-        guestName,
-        guestEmail,
-        guestPhone,
-        storyId,
-        'Storymaker Premium'
-      );
-
-      console.log('Guest user order created:', orderResponse);
-      toast.success('Order created successfully!');
+        description: "Storymaker Premium",
+        currency
+      };
       
-      // Handle payment based on payment mode
-      if (orderResponse.payment_mode === 'stripe') {
-        console.log('Stripe order:', {
-          orderId: orderResponse.stripe_order_id,
-          clientSecret: orderResponse.stripe_client_secret,
-          currency: orderResponse.currency,
-        });
-        // Process Stripe payment
-      } else {
-        console.log('Razorpay order:', {
-          orderId: orderResponse.razorpay_order_id,
-          currency: orderResponse.currency,
-        });
-        // Process Razorpay payment
-      }
+      const callbacks: PaymentProcessorCallbacks = {
+        onSuccess: () => {
+          console.log(" Stripe payment successful!");
+          toast.success("Stripe payment successful!");
+          onPaymentSuccess();
+        },
+        onError: (error: string) => {
+          console.error(" Stripe payment error:", error);
+          toast.error(`Stripe payment failed: ${error}`);
+        },
+        onCancel: () => {
+          console.log(" Stripe payment cancelled");
+          toast.info("Stripe payment was cancelled");
+        }
+      };
 
-      onPaymentSuccess();
-    } catch (error: any) {
-      console.error('Payment error:', error);
-      toast.error(error.message || 'Payment failed');
+      const options: PaymentProcessorOptions = {
+        storyId,
+        isAuthenticated,
+        guestDetails: !isAuthenticated ? guestDetails : undefined,
+        callbacks
+      };
+
+      await processPayment(paymentConfig, options);
+
+    } catch (error) {
+      console.error("Stripe payment error:", error);
+      toast.error(error instanceof Error ? error.message : "Stripe payment failed");
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleAutoPayment = async () => {
+  // RazorPay-specific payment processing
+  const handleRazorpayPayment = async () => {
     setIsProcessing(true);
     
     try {
-      // Auto-detect authentication status - currency auto-set based on payment mode
-      const orderResponse = await createOrder(
-        amount,
-        storyId,
-        'Storymaker Premium',
-        guestName,
-        guestEmail,
-        guestPhone
-      );
+      const callbacks: RazorpayPaymentCallbacks = {
+        onSuccess: (result: RazorpayPaymentResult) => {
+          console.log(" RazorPay payment successful!", result);
+          toast.success("RazorPay payment successful!");
+          onPaymentSuccess();
+        },
+        onError: (error: string) => {
+          console.error(" RazorPay payment error:", error);
+          toast.error(`RazorPay payment failed: ${error}`);
+        },
+        onCancel: () => {
+          console.log(" RazorPay payment cancelled");
+          toast.info("RazorPay payment was cancelled");
+        }
+      };
 
-      console.log('Auto-detected order created:', orderResponse);
-      toast.success('Order created successfully!');
-      
-      onPaymentSuccess();
-    } catch (error: any) {
-      console.error('Payment error:', error);
-      toast.error(error.message || 'Payment failed');
+      const paymentRequest = {
+        amount,
+        currency: "INR",
+        storyId,
+        guestName: !isAuthenticated ? guestDetails.name : undefined,
+        guestEmail: !isAuthenticated ? guestDetails.email : undefined,
+        guestPhone: !isAuthenticated ? guestDetails.phone : undefined,
+      };
+
+      await processRazorpayPayment(paymentRequest, callbacks);
+
+    } catch (error) {
+      console.error("RazorPay payment error:", error);
+      toast.error(error instanceof Error ? error.message : "RazorPay payment failed");
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  // Stripe checkout in popup
+  const handleStripePopup = async () => {
+    try {
+      await openStripeCheckoutInPopup({
+        sessionId: "dummy_session_id",
+        orderId: "dummy_order_id",
+        amount,
+        currency,
+        storyId,
+        clientSecret: "dummy_client_secret"
+      });
+    } catch (error) {
+      console.error("Stripe popup error:", error);
+      toast.error("Failed to open Stripe popup");
+    }
+  };
+
+  // RazorPay checkout in popup
+  const handleRazorpayPopup = async () => {
+    try {
+      await openRazorpayCheckoutInPopup({
+        orderId: "dummy_order_id",
+        amount,
+        currency: "INR",
+        storyId,
+        guestName: !isAuthenticated ? guestDetails.name : undefined,
+        guestEmail: !isAuthenticated ? guestDetails.email : undefined,
+        guestPhone: !isAuthenticated ? guestDetails.phone : undefined,
+      });
+    } catch (error) {
+      console.error("RazorPay popup error:", error);
+      toast.error("Failed to open RazorPay popup");
     }
   };
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md">
-      <h3 className="text-lg font-semibold mb-4">Payment API Example</h3>
+    <div className="p-6 bg-white rounded-lg shadow-lg max-w-2xl mx-auto">
+      <h3 className="text-lg font-semibold mb-4">Payment API Examples</h3>
       
-      <div className="mb-4">
+      <div className="mb-4 p-4 bg-gray-50 rounded-lg">
         <p><strong>Current Payment Mode:</strong> {paymentMode} (from VITE_PAYMENT_MODE)</p>
         <p><strong>Currency:</strong> {currency} (auto-set based on payment mode)</p>
-        <p><strong>Amount:</strong> {currency === 'USD' ? `$${amount}` : `₹${amount}`}</p>
-        <p><strong>Authentication Status:</strong> {isAuthenticated ? 'Logged In' : 'Guest User'}</p>
-        {storyId && <p><strong>Story ID:</strong> {storyId}</p>}
+        <p><strong>Amount:</strong> {currency === "USD" ? `$${amount}` : `₹${amount}`}</p>
+        <p><strong>Authentication:</strong> {isAuthenticated ? "Logged In" : "Guest User"}</p>
       </div>
 
-      <div className="space-y-3">
-        {isAuthenticated ? (
+      <div className="space-y-4">
+        {/* Unified Payment (Recommended) */}
+        <div className="border p-4 rounded-lg">
+          <h4 className="font-medium mb-2"> Unified Payment (Recommended)</h4>
+          <p className="text-sm text-gray-600 mb-3">
+            Uses the unified payment processor that automatically handles both Stripe and RazorPay based on configuration.
+          </p>
           <Button
-            onClick={handleLoggedInPayment}
+            onClick={handleUnifiedPayment}
             disabled={isProcessing}
-            className="w-full bg-green-600 hover:bg-green-700 text-white"
+            className="w-full"
           >
-            {isProcessing ? 'Processing...' : 'Pay as Logged-in User'}
+            {isProcessing ? "Processing..." : "Process Unified Payment"}
           </Button>
-        ) : (
-          <div className="space-y-3">
-            <div className="grid grid-cols-1 gap-2">
-              <input
-                type="text"
-                placeholder="Guest Name"
-                value={guestName}
-                onChange={(e) => setGuestName(e.target.value)}
-                className="border rounded px-3 py-2"
-              />
-              <input
-                type="email"
-                placeholder="Guest Email"
-                value={guestEmail}
-                onChange={(e) => setGuestEmail(e.target.value)}
-                className="border rounded px-3 py-2"
-              />
-              <input
-                type="tel"
-                placeholder="Guest Phone"
-                value={guestPhone}
-                onChange={(e) => setGuestPhone(e.target.value)}
-                className="border rounded px-3 py-2"
-              />
-            </div>
-            
+        </div>
+
+        {/* Stripe-specific Payment */}
+        <div className="border p-4 rounded-lg">
+          <h4 className="font-medium mb-2"> Stripe Payment</h4>
+          <p className="text-sm text-gray-600 mb-3">
+            Direct Stripe payment processing with comprehensive error handling.
+          </p>
+          <Button
+            onClick={handleStripePayment}
+            disabled={isProcessing}
+            className="w-full bg-blue-600 hover:bg-blue-700"
+          >
+            {isProcessing ? "Processing..." : "Process Stripe Payment"}
+          </Button>
+        </div>
+
+        {/* RazorPay-specific Payment */}
+        <div className="border p-4 rounded-lg">
+          <h4 className="font-medium mb-2"> RazorPay Payment</h4>
+          <p className="text-sm text-gray-600 mb-3">
+            Direct RazorPay payment processing with comprehensive error handling.
+          </p>
+          <Button
+            onClick={handleRazorpayPayment}
+            disabled={isProcessing}
+            className="w-full bg-yellow-600 hover:bg-yellow-700"
+          >
+            {isProcessing ? "Processing..." : "Process RazorPay Payment"}
+          </Button>
+        </div>
+
+        {/* Popup Examples */}
+        <div className="border p-4 rounded-lg">
+          <h4 className="font-medium mb-2"> Popup Examples</h4>
+          <p className="text-sm text-gray-600 mb-3">
+            Open payment checkouts in popup windows.
+          </p>
+          <div className="flex gap-2">
             <Button
-              onClick={handleGuestPayment}
+              onClick={handleStripePopup}
               disabled={isProcessing}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              className="flex-1 bg-blue-600 hover:bg-blue-700"
             >
-              {isProcessing ? 'Processing...' : 'Pay as Guest User'}
+              Stripe Popup
+            </Button>
+            <Button
+              onClick={handleRazorpayPopup}
+              disabled={isProcessing}
+              className="flex-1 bg-yellow-600 hover:bg-yellow-700"
+            >
+              RazorPay Popup
             </Button>
           </div>
-        )}
-
-        <Button
-          onClick={handleAutoPayment}
-          disabled={isProcessing}
-          className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-        >
-          {isProcessing ? 'Processing...' : 'Auto-Detect & Pay'}
-        </Button>
+        </div>
       </div>
 
-      <div className="mt-4 text-sm text-gray-600">
-        <p><strong>Request Format (Currency Auto-Set):</strong></p>
-        <div className="bg-gray-50 p-3 rounded text-xs">
-          <p><strong>Logged-in User:</strong></p>
-          <pre className="overflow-x-auto">
-{`{
-  "amount": ${amount}.00,
-  "currency": "${currency}",  // ← Auto-set: USD for Stripe, INR for Razorpay
-  "payment_mode": "${paymentMode}",
-  "story_id": "${storyId || 'your-story-uuid-here'}",
-  "description": "Storymaker Premium"
-}`}
-          </pre>
-          
-          <p className="mt-2"><strong>Guest User:</strong></p>
-          <pre className="overflow-x-auto">
-{`{
-  "amount": ${amount}.00,
-  "currency": "${currency}",  // ← Auto-set: USD for Stripe, INR for Razorpay
-  "payment_mode": "${paymentMode}",
-  "guest_name": "${guestName}",
-  "guest_email": "${guestEmail}",
-  "guest_phone": "${guestPhone}",
-  "story_id": "${storyId || 'your-story-uuid-here'}",
-  "description": "Storymaker Premium"
-}`}
-          </pre>
+      {/* Guest Details Form */}
+      {!isAuthenticated && (
+        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+          <h4 className="font-medium mb-3">Guest Details</h4>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium mb-1">Name</label>
+              <input
+                type="text"
+                value={guestDetails.name}
+                onChange={(e) => setGuestDetails({ ...guestDetails, name: e.target.value })}
+                className="w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Email</label>
+              <input
+                type="email"
+                value={guestDetails.email}
+                onChange={(e) => setGuestDetails({ ...guestDetails, email: e.target.value })}
+                className="w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Phone</label>
+              <input
+                type="tel"
+                value={guestDetails.phone}
+                onChange={(e) => setGuestDetails({ ...guestDetails, phone: e.target.value })}
+                className="w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+          </div>
         </div>
-        
-        <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
-          <p><strong>Currency Rules:</strong></p>
-          <ul className="list-disc list-inside">
-            <li>Stripe: USD (automatically set)</li>
-            <li>Razorpay: INR (automatically set)</li>
-          </ul>
+      )}
+
+      {/* Code Examples */}
+      <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+        <h4 className="font-medium mb-3">Code Examples</h4>
+        <div className="text-sm space-y-2">
+          <div>
+            <strong>Unified Payment:</strong>
+            <pre className="mt-1 p-2 bg-white rounded text-xs overflow-x-auto">
+{`await processPayment(paymentConfig, options);`}
+            </pre>
+          </div>
+          <div>
+            <strong>Stripe Payment:</strong>
+            <pre className="mt-1 p-2 bg-white rounded text-xs overflow-x-auto">
+{`await processPayment(paymentConfig, options);`}
+            </pre>
+          </div>
+          <div>
+            <strong>RazorPay Payment:</strong>
+            <pre className="mt-1 p-2 bg-white rounded text-xs overflow-x-auto">
+{`await processRazorpayPayment(paymentRequest, callbacks);`}
+            </pre>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default PaymentExample; 
+export default PaymentExample;
