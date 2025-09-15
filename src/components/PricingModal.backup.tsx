@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
-import { createPaymentOrder, verifyPayment, handleFailedPayment, handleCancelledPayment, CreateOrderRequest, PaymentVerificationRequest } from '@/utils/Payments';
-import { redirectToStripeCheckout, openStripeCheckoutInPopup } from '@/utils/Payments';
+import { createPaymentOrder, verifyPayment, handleFailedPayment, handleCancelledPayment, CreateOrderRequest, PaymentVerificationRequest } from '@/utils/Payments/api/paymentApi';
+import { redirectToStripeCheckout, openStripeCheckoutInPopup } from '@/utils/Payments/stripe/stripeCheckout';
 
 import { useAuth } from '@/hooks/useAuth';
 import LoginModal from './LoginModal';
-import { logPaymentFlow, validateRazorpayResponse, getPaymentTroubleshootingTips } from '@/utils/Payments';
+import { logPaymentFlow, validateRazorpayResponse, getPaymentTroubleshootingTips } from '@/utils/Payments/common/paymentDebug';
 import { getPaymentConfig, getFormattedPaymentAmount, getFormattedOriginalPrice } from '@/config/app';
 
 // Define Razorpay type to avoid TypeScript errors
@@ -813,6 +813,6 @@ const updatePaymentStatus = async (orderId: string, status: string) => {
   );
 };
 
-import { CreateOrderResponse } from '@/utils/Payments';
+import { CreateOrderResponse } from '@/utils/Payments/api/paymentApi';
 
 export default PricingModal; 

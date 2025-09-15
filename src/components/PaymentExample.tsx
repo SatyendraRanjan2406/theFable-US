@@ -2,28 +2,25 @@
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { 
-  // Unified payment functions
   processPayment,
-  setupStripePaymentListener,
-  setupRazorpayPaymentListener,
-  
-  // Stripe-specific functions
-  openStripeCheckoutInPopup,
-  redirectToStripeCheckout,
-  
-  // RazorPay-specific functions
-  openRazorpayCheckoutInPopup,
-  redirectToRazorpayCheckout,
-  processRazorpayPayment,
-  
-  // Types
   PaymentProcessorOptions,
   PaymentProcessorCallbacks,
-  GuestDetails,
+  GuestDetails
+} from "@/utils/Payments/common/paymentProcessors";
+import { getPaymentMode, getPaymentConfig } from "@/utils/Payments/common/paymentConfig";
+import { 
+  openStripeCheckoutInPopup,
+  redirectToStripeCheckout
+} from "@/utils/Payments/stripe/stripeCheckout";
+import { 
+  openRazorpayCheckoutInPopup,
+  redirectToRazorpayCheckout
+} from "@/utils/Payments/razorpay/razorpayCheckout";
+import {
+  processRazorpayPayment,
   RazorpayPaymentCallbacks,
   RazorpayPaymentResult
-} from "@/utils/Payments";
-import { getPaymentMode } from "@/utils/Payments";
+} from "@/utils/Payments/razorpay/razorpayPaymentProcessor";
 
 interface PaymentExampleProps {
   storyId?: string;
@@ -55,6 +52,7 @@ const PaymentExample: React.FC<PaymentExampleProps> = ({
     
     try {
       const paymentConfig = {
+        ...getPaymentConfig(),
         amount,
         description: "Storymaker Premium",
         currency
@@ -99,6 +97,7 @@ const PaymentExample: React.FC<PaymentExampleProps> = ({
     
     try {
       const paymentConfig = {
+        ...getPaymentConfig(),
         amount,
         description: "Storymaker Premium",
         currency

@@ -2,11 +2,11 @@
 import { toast } from "sonner";
 import { 
   processPayment, 
-  setupStripePaymentListener,
   PaymentProcessorOptions,
   PaymentProcessorCallbacks,
   GuestDetails
-} from "@/utils/Payments";
+} from "@/utils/Payments/common/paymentProcessors";
+import { PaymentConfig } from "@/utils/Payments/common/paymentConfig";
 import { useAuth } from "@/hooks/useAuth";
 import LoginModal from "./LoginModal";
 import { getPaymentConfig, getFormattedPaymentAmount, getFormattedOriginalPrice } from "@/config/app";
@@ -47,33 +47,6 @@ const PricingModal: React.FC<PricingModalProps> = ({
     }
   }, [open]);
 
-  // Setup Stripe payment success listener
-  useEffect(() => {
-    if (!open) return;
-
-    const callbacks: PaymentProcessorCallbacks = {
-      onSuccess: () => {
-        console.log(" Payment success callback triggered");
-        onPaymentSuccess();
-        onClose();
-      },
-      onError: (error: string) => {
-        console.error(" Payment error:", error);
-        setPaymentProcessing(false);
-        onPaymentCancellation?.();
-      },
-      onCancel: () => {
-        console.log(" Payment cancelled");
-        setPaymentProcessing(false);
-        onPaymentCancellation?.();
-      }
-    };
-
-    const cleanup = setupStripePaymentListener(callbacks);
-    
-    return cleanup;
-  }, [open, onPaymentSuccess, onPaymentCancellation, onClose]);
-
   if (!open) return null;
 
   const handlePayment = async () => {
@@ -87,21 +60,22 @@ const PricingModal: React.FC<PricingModalProps> = ({
     
     try {
       const paymentConfig = getPaymentConfig();
-      
+
+      // Create callbacks for payment processing
       const callbacks: PaymentProcessorCallbacks = {
         onSuccess: () => {
-          console.log(" Payment success callback triggered");
+          console.log("🎉 Payment success callback triggered");
           setPaymentProcessing(false);
           onPaymentSuccess();
           onClose();
         },
         onError: (error: string) => {
-          console.error(" Payment error:", error);
+          console.error("❌ Payment error:", error);
           setPaymentProcessing(false);
           onPaymentCancellation?.();
         },
         onCancel: () => {
-          console.log(" Payment cancelled");
+          console.log("⚠️ Payment cancelled");
           setPaymentProcessing(false);
           onPaymentCancellation?.();
         }
@@ -114,12 +88,11 @@ const PricingModal: React.FC<PricingModalProps> = ({
         callbacks
       };
 
-
+      // Process payment with callbacks
       await processPayment(paymentConfig, options);
 
-
     } catch (error) {
-      console.error("Error processing payment:", error);
+      console.error("❌ Error processing payment:", error);
       toast.error("Failed to process payment. Please try again.");
       setPaymentProcessing(false);
     }
@@ -241,15 +214,15 @@ const PricingModal: React.FC<PricingModalProps> = ({
             {/* Features list - only show on main modal, not guest form */}
             <div className="mb-6 space-y-2">
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-green-500"></span>
+                <span className="text-green-500">✓</span>
                 <span>All premium illustrations</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-green-500"></span>
+                <span className="text-green-500">✓</span>
                 <span>High-quality PDF download</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-green-500"></span>
+                <span className="text-green-500">✓</span>
                 <span>Character-consistent artwork</span>
               </div>
             </div>

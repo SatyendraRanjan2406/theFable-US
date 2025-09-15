@@ -212,6 +212,9 @@ export const getPaymentStatus = async (
   }
 };
 
+
+
+
 /**
  * Update order status in the backend
  * This is used to update the status when payments fail or are cancelled
@@ -238,6 +241,9 @@ export const updateOrderStatus = async (
     throw error;
   }
 };
+
+
+
 
 /**
  * Handle failed payment and update order status
@@ -304,6 +310,8 @@ export const handleFailedPayment = async (
   }
 };
 
+
+
 /**
  * Handle cancelled payment and update order status
  * This should be called when a payment is cancelled by the user
@@ -365,8 +373,9 @@ export const handleCancelledPayment = async (
   }
 }; 
 
-// Helper functions for creating payment orders
 
+
+// Helper functions for creating payment orders
 export const createLoggedInUserOrder = async (
   amount: number,
   storyId?: string,

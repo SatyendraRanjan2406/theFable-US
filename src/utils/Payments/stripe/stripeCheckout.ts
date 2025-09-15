@@ -1,6 +1,6 @@
-// Stripe Checkout Utility
+// Stripe Checkout Utility - Callback Based
 import { loadStripe } from '@stripe/stripe-js';
-import { PaymentProcessorCallbacks } from '../common';
+import { PaymentProcessorCallbacks } from '../common/paymentProcessors';
 
 // Load Stripe with publishable key
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
@@ -16,7 +16,7 @@ export interface StripeCheckoutOptions {
 }
 
 /**
- * Open Stripe Checkout in a popup window
+ * Open Stripe Checkout in a popup window - Callback Based
  */
 export const openStripeCheckoutInPopup = async (options: StripeCheckoutOptions) => {
   try {
@@ -41,20 +41,19 @@ export const openStripeCheckoutInPopup = async (options: StripeCheckoutOptions) 
           // Check for payment success in localStorage
           const paymentSuccess = localStorage.getItem('stripe_payment_success');
 
-
-
-          
           if (paymentSuccess) {
-
-            
             localStorage.removeItem('stripe_payment_success');
             console.log('✅ Stripe payment completed successfully');
-
-            debugger;
-            // Trigger payment success callback
-            window.dispatchEvent(new CustomEvent('stripe-payment-success', {
-              detail: { sessionId: options.sessionId }
-            }));
+            
+            // Use callback instead of dispatchEvent
+            if (options.callbacks) {
+              options.callbacks.onSuccess();
+            }
+          } else {
+            // Payment was cancelled or failed
+            if (options.callbacks) {
+              options.callbacks.onCancel();
+            }
           }
         }
       }, 1000);
@@ -105,16 +104,21 @@ export const openStripeCheckoutInPopup = async (options: StripeCheckoutOptions) 
                 localStorage.removeItem('stripe_payment_success');
                 console.log('✅ Stripe payment completed successfully');
 
-                debugger;
-                // Trigger payment success callback
-                window.dispatchEvent(new CustomEvent('stripe-payment-success', {
-                  detail: { sessionId: sessionData.checkout_session_id || sessionData.sessionId }
-                }));
+                // Use callback instead of dispatchEvent
+                if (options.callbacks) {
+                  options.callbacks.onSuccess();
+                }
+              } else {
+                // Payment was cancelled or failed
+                if (options.callbacks) {
+                  options.callbacks.onCancel();
+                }
               }
             }
           }, 1000);
           
           console.log('✅ Stripe checkout opened in popup');
+          
           return;
         } else if (sessionData.checkout_session_id) {
           // Backend returned a session ID - create redirect page in popup
@@ -136,10 +140,16 @@ export const openStripeCheckoutInPopup = async (options: StripeCheckoutOptions) 
               if (paymentSuccess) {
                 localStorage.removeItem('stripe_payment_success');
                 console.log('✅ Stripe payment completed successfully');
-                // Trigger payment success callback
-                window.dispatchEvent(new CustomEvent('stripe-payment-success', {
-                  detail: { sessionId: sessionData.checkout_session_id }
-                }));
+                
+                // Use callback instead of dispatchEvent
+                if (options.callbacks) {
+                  options.callbacks.onSuccess();
+                }
+              } else {
+                // Payment was cancelled or failed
+                if (options.callbacks) {
+                  options.callbacks.onCancel();
+                }
               }
             }
           }, 1000);
@@ -166,31 +176,39 @@ export const openStripeCheckoutInPopup = async (options: StripeCheckoutOptions) 
               if (paymentSuccess) {
                 localStorage.removeItem('stripe_payment_success');
                 console.log('✅ Stripe payment completed successfully');
-                // Trigger payment success callback
-                options.callbacks?.onSuccess();
-                // window.dispatchEvent(new CustomEvent('stripe-payment-success', {
-                //   detail: { sessionId: sessionData.sessionId }
-                // }));
+                
+                // Use callback instead of dispatchEvent
+                if (options.callbacks) {
+                  options.callbacks.onSuccess();
+                }
+              } else {
+                // Payment was cancelled or failed
+                if (options.callbacks) {
+                  options.callbacks.onCancel();
+                }
               }
             }
           }, 1000);
           
           console.log('✅ Stripe checkout opened in popup');
-
           return;
         }
       }
     }
     
     throw new Error('Failed to create Stripe checkout session for popup');
+
   } catch (error) {
     console.error('❌ Error opening Stripe checkout in popup:', error);
+    if (options.callbacks) {
+      options.callbacks.onError(error instanceof Error ? error.message : 'Stripe checkout failed');
+    }
     throw error;
   }
 };
 
 /**
- * Redirect to Stripe Checkout using session ID or checkout URL
+ * Redirect to Stripe Checkout using session ID or checkout URL - Callback Based
  * This is the recommended approach for Stripe Checkout
  */
 export const redirectToStripeCheckout = async (options: StripeCheckoutOptions) => {
@@ -212,6 +230,9 @@ export const redirectToStripeCheckout = async (options: StripeCheckoutOptions) =
       
       if (result.error) {
         console.error('❌ Stripe checkout error:', result.error);
+        if (options.callbacks) {
+          options.callbacks.onError(result.error.message || 'Stripe checkout failed');
+        }
         throw new Error(result.error.message || 'Stripe checkout failed');
       }
       
@@ -243,6 +264,9 @@ export const redirectToStripeCheckout = async (options: StripeCheckoutOptions) =
       if (!response.ok) {
         const errorText = await response.text();
         console.error('❌ Checkout session creation failed:', errorText);
+        if (options.callbacks) {
+          options.callbacks.onError('Failed to create checkout session');
+        }
         throw new Error('Failed to create checkout session');
       }
 
@@ -265,6 +289,9 @@ export const redirectToStripeCheckout = async (options: StripeCheckoutOptions) =
         
         if (result.error) {
           console.error('❌ Stripe checkout error:', result.error);
+          if (options.callbacks) {
+            options.callbacks.onError(result.error.message || 'Stripe checkout failed');
+          }
           throw new Error(result.error.message || 'Stripe checkout failed');
         }
         
@@ -280,6 +307,9 @@ export const redirectToStripeCheckout = async (options: StripeCheckoutOptions) =
         
         if (result.error) {
           console.error('❌ Stripe checkout error:', result.error);
+          if (options.callbacks) {
+            options.callbacks.onError(result.error.message || 'Stripe checkout failed');
+          }
           throw new Error(result.error.message || 'Stripe checkout failed');
         }
         
@@ -287,13 +317,24 @@ export const redirectToStripeCheckout = async (options: StripeCheckoutOptions) =
         return;
       } else {
         console.warn('⚠️ No checkout_url, checkout_session_id, or sessionId in response:', sessionData);
-        throw new Error('No checkout session received from backend');
+        const error = 'No checkout session received from backend';
+        if (options.callbacks) {
+          options.callbacks.onError(error);
+        }
+        throw new Error(error);
       }
     }
 
-    throw new Error('No session ID or order ID provided for Stripe checkout');
+    const error = 'No session ID or order ID provided for Stripe checkout';
+    if (options.callbacks) {
+      options.callbacks.onError(error);
+    }
+    throw new Error(error);
   } catch (error) {
     console.error('❌ Error in Stripe checkout:', error);
+    if (options.callbacks && !error.message?.includes('callbacks')) {
+      options.callbacks.onError(error instanceof Error ? error.message : 'Stripe checkout failed');
+    }
     throw error;
   }
 };
