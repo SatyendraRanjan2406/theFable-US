@@ -6,7 +6,6 @@ import {
   PaymentProcessorCallbacks,
   GuestDetails
 } from "@/utils/Payments/common/paymentProcessors";
-import { PaymentConfig } from "@/utils/Payments/common/paymentConfig";
 import { useAuth } from "@/hooks/useAuth";
 import LoginModal from "./LoginModal";
 import { getPaymentConfig, getFormattedPaymentAmount, getFormattedOriginalPrice } from "@/config/app";
@@ -87,7 +86,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
         guestDetails: !isAuthenticated ? guestDetails : undefined,
         callbacks
       };
-
+      debugger;
       // Process payment with callbacks
       await processPayment(paymentConfig, options);
 

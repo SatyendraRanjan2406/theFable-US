@@ -20,7 +20,8 @@ import {
   validateRazorpayResponse, 
   getPaymentTroubleshootingTips 
 } from "./paymentDebug";
-import { PaymentConfig } from "./paymentConfig";
+//import { PaymentConfig } from "../api/paymentApi";
+import { handleStripePayment } from "../stripe/stripe";
 
 // Declare Razorpay types and global
 export interface RazorpayResponse {
@@ -80,48 +81,6 @@ export interface PaymentProcessorOptions {
   callbacks: PaymentProcessorCallbacks;
 }
 
-/**
- * Verify Stripe payment with backend - Callback Based
- */
-export const verifyStripePayment = async (
-  sessionId: string, 
-  callbacks: PaymentProcessorCallbacks
-): Promise<void> => {
-  try {
-    console.log("🔍 Verifying Stripe payment with session ID:", sessionId);
-    
-    // Call backend to verify the payment
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/stripe/verify-checkout-session/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${localStorage.getItem("authToken")}`,
-      },
-      body: JSON.stringify({
-        session_id: sessionId
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Payment verification failed");
-    }
-
-    const verificationResult = await response.json();
-    console.log("✅ Stripe payment verification successful:", verificationResult);
-
-    // Update payment status in database
-    await updatePaymentStatus(verificationResult.order_id || sessionId, "completed");
-
-    // Use callback instead of dispatchEvent
-    toast.success("Payment successful! Generating your story...");
-    callbacks.onSuccess();
-    
-  } catch (error) {
-    console.error("❌ Stripe payment verification failed:", error);
-    toast.error("Payment verification failed. Please contact support.");
-    callbacks.onError(error instanceof Error ? error.message : "Stripe verification failed");
-  }
-};
 
 /**
  * Update payment status in database
@@ -191,58 +150,6 @@ export const validateGuestDetails = (guestDetails: GuestDetails): string | null 
   return null; // No validation errors
 };
 
-/**
- * Handle Stripe payment processing - Callback Based
- */
-export const handleStripePayment = async (
-  orderDetails: CreateOrderResponse,
-  callbacks: PaymentProcessorCallbacks
-): Promise<void> => {
-  try {
-    console.log("💳 Processing Stripe payment:", orderDetails);
-    
-    // Create a simple popup window for Stripe checkout
-    const checkoutUrl = `${window.location.origin}/stripe-checkout?sessionId=${orderDetails.stripe_session_id}`;
-    const popup = window.open(checkoutUrl, 'stripe-checkout', 'width=500,height=600,scrollbars=yes,resizable=yes');
-    
-    if (!popup) {
-      throw new Error('Failed to open popup. Please allow popups for this site.');
-    }
-    
-    // Monitor popup for closure
-    const checkClosed = setInterval(() => {
-      if (popup.closed) {
-        clearInterval(checkClosed);
-        console.log('✅ Stripe checkout popup closed');
-        
-        // Check for payment success in localStorage
-        const paymentSuccess = localStorage.getItem('stripe_payment_success');
-        if (paymentSuccess) {
-          localStorage.removeItem('stripe_payment_success');
-          console.log('✅ Stripe payment completed successfully');
-          
-          // Use callback instead of dispatchEvent
-          verifyStripePayment(orderDetails.stripe_session_id, callbacks);
-        } else {
-          // Payment was cancelled or failed
-          callbacks.onCancel();
-        }
-      }
-    }, 1000);
-    
-    console.log("✅ Stripe checkout opened in popup");
-  } catch (error) {
-    console.error("❌ Stripe payment error:", error);
-    await handleFailedPayment(
-      orderDetails.stripe_order_id || "unknown",
-      "Stripe payment failed",
-      undefined,
-      error instanceof Error ? error.message : "Unknown error"
-    );
-    callbacks.onError(error instanceof Error ? error.message : "Stripe payment failed");
-    toast.error("Stripe payment failed. Please try again.");
-  }
-};
 
 /**
  * Handle Razorpay payment processing - Callback Based
@@ -466,11 +373,18 @@ export const handleRazorpayPayment = async (
 /**
  * Main payment processor function that handles both Stripe and RazorPay - Callback Based
  */
+/**
+ * Main payment processor function that handles both Stripe and RazorPay - Callback Based
+ */
+type PaymentInput = { amount: number; description: string; currency: string };
+
 export const processPayment = async (
-  paymentConfig: PaymentConfig & { amount: number; description: string; currency: string },
+  paymentConfig: PaymentInput,
   options: PaymentProcessorOptions
 ): Promise<void> => {
   try {
+
+    debugger;
     console.log("🚀 Starting payment process with config:", paymentConfig);
     console.log("📋 Payment options:", options);
 
@@ -513,6 +427,7 @@ export const processPayment = async (
     }
 
     const orderDetails = await createPaymentOrder(orderRequest, options.isAuthenticated);
+    debugger;
 
     console.log("📋 Order details received:", orderDetails);
     console.log("💳 Payment mode:", orderDetails.payment_mode);
@@ -531,5 +446,81 @@ export const processPayment = async (
     const errorMessage = error instanceof Error ? error.message : "Failed to create payment order";
     toast.error("Failed to create payment order. Please try again.");
     options.callbacks.onError(errorMessage);
+  }
+};
+
+/**
+ * Verify Stripe payment from current window URL and close window
+ * This migrates the logic previously in the PaymentSuccess page component
+ */
+export const verifyStripePaymentFromWindow = async (): Promise<void> => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+
+    if (!sessionId) {
+      toast.error("No Stripe session ID found");
+      return;
+    }
+
+    console.log("🔍 Verifying Stripe payment with session ID:", sessionId);
+
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/stripe/verify-checkout-session/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("authToken")}`,
+      },
+      body: JSON.stringify({
+        session_id: sessionId
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Payment verification failed");
+    }
+
+    const result = await response.json();
+    console.log("✅ Stripe payment verification successful:", result);
+
+    // Persist success signal for parent window polling
+    localStorage.setItem("stripe_payment_success", "true");
+
+    toast.success("Payment successful!");
+
+    setTimeout(() => {
+      window.close();
+    }, 2000);
+  } catch (error) {
+    console.error("❌ Stripe payment verification failed:", error);
+    toast.error("Payment verification failed. Please contact support.");
+
+    setTimeout(() => {
+      window.close();
+    }, 3000);
+  }
+};
+
+/**
+ * Handle Stripe payment cancellation from popup window
+ * Mirrors the previous PaymentCancelled page behavior
+ */
+export const handleStripePaymentCancelledFromWindow = (): void => {
+  try {
+    // Show cancellation message
+    toast.error("Payment was cancelled");
+
+    // Store cancellation in localStorage for popup parent to detect
+    localStorage.setItem("stripe_payment_cancelled", "true");
+
+    // Close the popup after a short delay
+    setTimeout(() => {
+      window.close();
+    }, 2000);
+  } catch (error) {
+    // As a fallback, still attempt to close the window
+    setTimeout(() => {
+      window.close();
+    }, 2000);
   }
 };

@@ -7,11 +7,11 @@ import {
   PaymentProcessorCallbacks,
   GuestDetails
 } from "@/utils/Payments/common/paymentProcessors";
-import { getPaymentMode, getPaymentConfig } from "@/utils/Payments/common/paymentConfig";
+import { getPaymentMode, getPaymentConfig } from "@/utils/Payments/api/paymentApi";
 import { 
   openStripeCheckoutInPopup,
   redirectToStripeCheckout
-} from "@/utils/Payments/stripe/stripeCheckout";
+} from "@/utils/Payments/stripe/stripe";
 import { 
   openRazorpayCheckoutInPopup,
   redirectToRazorpayCheckout

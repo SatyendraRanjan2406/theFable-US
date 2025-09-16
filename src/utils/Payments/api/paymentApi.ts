@@ -26,7 +26,6 @@
 
 import { apiFetch } from '@/utils/apiInterceptor';
 import { API_ENDPOINTS } from '@/config/api';
-import { getPaymentMode } from '../common/paymentConfig';
 
 export interface CreateOrderRequest {
   amount: number;
@@ -91,6 +90,37 @@ export interface UpdateOrderStatusResponse {
   updated_status: string;
 }
 
+export type PaymentMode = 'stripe' | 'razorpay';
+
+export interface PaymentConfig {
+  mode: PaymentMode;
+  isStripeEnabled: boolean;
+  isRazorpayEnabled: boolean;
+}
+
+export const getPaymentMode = (): PaymentMode => {
+  const mode = (import.meta.env.VITE_PAYMENT_MODE as PaymentMode) || 'razorpay';
+  return mode;
+};
+
+export const isStripeEnabled = (): boolean => {
+  return getPaymentMode() === 'stripe';
+};
+
+export const isRazorpayEnabled = (): boolean => {
+  return getPaymentMode() === 'razorpay';
+};
+
+export const getPaymentConfig = (): PaymentConfig => {
+  const mode = getPaymentMode();
+  
+  return {
+    mode,
+    isStripeEnabled: mode === 'stripe',
+    isRazorpayEnabled: mode === 'razorpay',
+  };
+};
+
 /**
  * Create a payment order for both authenticated and anonymous users
  * For authenticated users: Only amount and currency are required
@@ -151,7 +181,6 @@ export const createPaymentOrder = async (
     if (!response) {
       throw new Error('Failed to retrieve order details.');
     }
-    debugger
     console.log('Order created successfully:', response);
     return response;
   } catch (error) {

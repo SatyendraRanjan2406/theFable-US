@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { createPaymentOrder, verifyPayment, handleFailedPayment, handleCancelledPayment, CreateOrderRequest, PaymentVerificationRequest } from '@/utils/Payments/api/paymentApi';
-import { redirectToStripeCheckout, openStripeCheckoutInPopup } from '@/utils/Payments/stripe/stripeCheckout';
+import { redirectToStripeCheckout, openStripeCheckoutInPopup } from '@/utils/Payments/stripe/stripe';
 
 import { useAuth } from '@/hooks/useAuth';
 import LoginModal from './LoginModal';

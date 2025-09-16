@@ -1,8 +1,8 @@
-// Stripe Checkout Utility - Callback Based
+import { toast } from "sonner";
+import type { CreateOrderResponse } from "../api/paymentApi";
+import type { PaymentProcessorCallbacks } from "../common/paymentProcessors";
 import { loadStripe } from '@stripe/stripe-js';
-import { PaymentProcessorCallbacks } from '../common/paymentProcessors';
 
-// Load Stripe with publishable key
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
 
 export interface StripeCheckoutOptions {
@@ -332,9 +332,140 @@ export const redirectToStripeCheckout = async (options: StripeCheckoutOptions) =
     throw new Error(error);
   } catch (error) {
     console.error('❌ Error in Stripe checkout:', error);
-    if (options.callbacks && !error.message?.includes('callbacks')) {
+    if (options.callbacks && !(error as any).message?.includes('callbacks')) {
       options.callbacks.onError(error instanceof Error ? error.message : 'Stripe checkout failed');
     }
     throw error;
   }
 };
+
+
+const updatePaymentStatusApi = async (orderId: string, status: string): Promise<void> => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/update-status/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("authToken")}`,
+      },
+      body: JSON.stringify({
+        order_id: orderId,
+        status: status
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn("⚠️ Failed to update payment status in database");
+    } else {
+      console.log("✅ Payment status updated in database");
+    }
+  } catch (error) {
+    console.error("❌ Error updating payment status:", error);
+  }
+};
+
+/**
+ * Verify Stripe payment with backend - Callback Based
+ */
+export const verifyStripePayment = async (
+  sessionId: string, 
+  callbacks: PaymentProcessorCallbacks
+): Promise<void> => {
+  try {
+    console.log("🔍 Verifying Stripe payment with session ID:", sessionId);
+    
+    // Call backend to verify the payment
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/stripe/verify-checkout-session/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("authToken")}`,
+      },
+      body: JSON.stringify({
+        session_id: sessionId
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Payment verification failed");
+    }
+
+    const verificationResult = await response.json();
+    console.log("✅ Stripe payment verification successful:", verificationResult);
+
+    // Update payment status in database
+    await updatePaymentStatusApi(verificationResult.order_id || sessionId, "completed");
+
+    // Use callback instead of dispatchEvent
+    toast.success("Payment successful! Generating your story...");
+    callbacks.onSuccess();
+    
+  } catch (error) {
+    console.error("❌ Stripe payment verification failed:", error);
+    toast.error("Payment verification failed. Please contact support.");
+    callbacks.onError(error instanceof Error ? error.message : "Stripe verification failed");
+  }
+};
+
+/**
+ * Handle Stripe payment processing - Callback Based
+ */
+export const handleStripePayment = async (
+  orderDetails: CreateOrderResponse,
+  callbacks: PaymentProcessorCallbacks
+): Promise<void> => {
+  try {
+    console.log("💳 Processing Stripe payment:", orderDetails);
+
+    // If no session id is present, create one via backend and open popup using helper
+    if (!orderDetails.stripe_session_id) {
+      console.log("⚠️ No Stripe session ID on order. Creating checkout session via backend...");
+      await openStripeCheckoutInPopup({
+        orderId: orderDetails.stripe_order_id,
+        amount: orderDetails.amount,
+        currency: orderDetails.currency,
+        storyId: orderDetails.story_id,
+        clientSecret: orderDetails.stripe_client_secret,
+        callbacks,
+      });
+      return;
+    }
+    
+    // Create a simple popup window for Stripe checkout using existing session
+    const checkoutUrl = `${window.location.origin}/stripe-checkout?sessionId=${orderDetails.stripe_session_id}`;
+    const popup = window.open(checkoutUrl, 'stripe-checkout', 'width=500,height=600,scrollbars=yes,resizable=yes');
+    
+    if (!popup) {
+      throw new Error('Failed to open popup. Please allow popups for this site.');
+    }
+    
+    // Monitor popup for closure
+    const checkClosed = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(checkClosed);
+        console.log('✅ Stripe checkout popup closed');
+        
+        // Check for payment success in localStorage
+        const paymentSuccess = localStorage.getItem('stripe_payment_success');
+        if (paymentSuccess) {
+          localStorage.removeItem('stripe_payment_success');
+          console.log('✅ Stripe payment completed successfully');
+          
+          // Use callback instead of dispatchEvent
+          verifyStripePayment(orderDetails.stripe_session_id!, callbacks);
+        } else {
+          // Payment was cancelled or failed
+          callbacks.onCancel();
+        }
+      }
+    }, 1000);
+    
+    console.log("✅ Stripe checkout opened in popup");
+  } catch (error) {
+    console.error("❌ Stripe payment error:", error);
+    callbacks.onError(error instanceof Error ? error.message : "Stripe payment failed");
+    toast.error("Stripe payment failed. Please try again.");
+  }
+}; 
+
+ 

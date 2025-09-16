@@ -18,11 +18,14 @@ import PaymentRefundPolicy from "./pages/PaymentRefundPolicy";
 import SidePanel from "./components/SidePanel";
 import { useState, useEffect } from "react";
 import StoryPage from './pages/StoryPage';
-import StripeCheckout from './pages/StripeCheckout';
+//import StripeCheckout from './pages/StripeCheckout';
 import { ContactProvider } from "./context/ContactContext";
 import { useAuth } from "@/hooks/useAuth";
 import LoginModal from "@/components/LoginModal";
-import PaymentSuccess from "./pages/PaymentSuccess";
+import StripeCheckout from "./pages/StripeCheckout";
+import PaymentSuccess from "@/utils/Payments/common/PaymentSuccess";
+import PaymentCancelled from "@/utils/Payments/common/PaymentCancelled";
+
 import { trackPageView } from "@/utils/gtm";
 
 const queryClient = new QueryClient();
@@ -54,8 +57,7 @@ export const App = () => {
         return 'Stories History - StoryMaker';
       case '/payments':
         return 'Payments - StoryMaker';
-      case '/payment-success':
-        return 'Payment Success - StoryMaker';
+
       case '/payment-refund-policy':
         return 'Payment Refund Policy - StoryMaker';
       case '/privacy':
@@ -139,10 +141,12 @@ export const App = () => {
             <Route path="/stories-history" element={<StoriesHistory />} />
             {/* <Route path="/settings" element={<Settings />} /> */}
             <Route path="/payments" element={<Payments />} />
-            <Route path="/payment-success" element={<PaymentSuccess />} />
+
             <Route path="/payment-refund-policy" element={<PaymentRefundPolicy />} />
             <Route path="/story/:id" element={<StoryPage />} />
             <Route path="/stripe-checkout" element={<StripeCheckout />} />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="/payment-cancelled" element={<PaymentCancelled />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/oauth/callback" element={<OAuthCallbackPage />} />

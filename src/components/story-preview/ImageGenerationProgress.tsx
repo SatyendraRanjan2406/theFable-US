@@ -62,7 +62,6 @@ const ImageGenerationProgress: React.FC<ImageGenerationProgressProps> = ({
 		console.log('🎯 PROGRESS UPDATE: Generated count changed to:', generatedCount, 'Progress:', Math.round(progress) + '%');
 	}, [generatedCount, progress]);
 
-	debugger;
 
 	return (
 		<div className="min-h-screen bg-gradient-to-br from-emerald-50 via-rose-50 via-amber-50 to-orange-50 flex flex-col items-center justify-center p-4">
