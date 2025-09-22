@@ -157,6 +157,7 @@ export const handleRazorpayPaymentFlow = async (
       amount: orderDetails.amount,
       currency: orderDetails.currency,
       name: "Character Canvas Tales",
+      
       description: "Unlock Premium Features",
       order_id: orderDetails.razorpay_order_id,
       handler: async function (response: RazorpayResponse) {
