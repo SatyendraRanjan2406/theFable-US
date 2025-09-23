@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { handleStripePaymentCancelledFromWindow } from "@/utils/Payments/common/paymentProcessors";
+import { handleStripePaymentCancelledFromWindow } from "@/utils/Payments/stripe/stripe";
 
 const PaymentCancelled = () => {
 	useEffect(() => {

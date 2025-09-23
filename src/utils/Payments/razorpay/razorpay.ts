@@ -1,8 +1,9 @@
-﻿/**
+/**
  * RazorPay Payment Processor - Callback Based
  * 
  * This module provides comprehensive RazorPay payment processing functionality
  * using callbacks instead of dispatchEvent for communication.
+ * Also includes checkout utilities previously in razorpayCheckout.ts
  */
 
 import { toast } from "sonner";
@@ -15,11 +16,7 @@ import {
   CreateOrderResponse,
   PaymentVerificationRequest 
 } from "../api/paymentApi";
-import { 
-  logPaymentFlow, 
-  validateRazorpayResponse, 
-  getPaymentTroubleshootingTips 
-} from "../common/paymentDebug";
+
 
 // Define RazorPay types
 export interface RazorpayResponse {
@@ -27,6 +24,20 @@ export interface RazorpayResponse {
   razorpay_order_id: string;
   razorpay_signature: string;
 }
+
+/**
+ * RazorPay Checkout Utilities
+ */
+export interface RazorpayCheckoutOptions {
+  orderId: string;
+  amount: number;
+  currency: string;
+  storyId?: string;
+  guestName?: string;
+  guestEmail?: string;
+  guestPhone?: string;
+}
+
 
 export interface RazorpayOptions {
   key: string;
@@ -59,6 +70,7 @@ export interface RazorpayInstance {
 
 declare const Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
 
+
 // RazorPay payment request interface
 export interface RazorpayPaymentRequest {
   amount: number;
@@ -69,6 +81,7 @@ export interface RazorpayPaymentRequest {
   guestPhone?: string;
 }
 
+
 // RazorPay payment result interface
 export interface RazorpayPaymentResult {
   success: boolean;
@@ -78,63 +91,34 @@ export interface RazorpayPaymentResult {
   error?: string;
 }
 
+
 // RazorPay payment processor callbacks
 export interface RazorpayPaymentCallbacks {
-  onSuccess: (result: RazorpayPaymentResult) => void;
+  onSuccess: () => void;
   onError: (error: string) => void;
   onCancel: () => void;
 }
 
-/**
- * Process RazorPay payment with comprehensive error handling - Callback Based
- */
-export const processRazorpayPayment = async (
-  request: RazorpayPaymentRequest,
-  callbacks: RazorpayPaymentCallbacks
-): Promise<RazorpayPaymentResult> => {
-  try {
-    console.log("🚀 Processing RazorPay payment request:", request);
-    
-    // Create payment order
-    const orderRequest: CreateOrderRequest = {
-      amount: request.amount,
-      currency: request.currency || "INR",
-      story_id: request.storyId,
-      description: "Storymaker Premium",
-    };
 
-    // Add guest details if provided
-    if (request.guestName && request.guestEmail && request.guestPhone) {
-      orderRequest.guest_name = request.guestName;
-      orderRequest.guest_email = request.guestEmail;
-      orderRequest.guest_phone = request.guestPhone;
-    }
-
-    const orderDetails = await createPaymentOrder(orderRequest, !request.guestName);
-    
-    console.log("📋 RazorPay order details received:", orderDetails);
-
-    // Verify it's a RazorPay order response
-    if (orderDetails.payment_mode !== "razorpay") {
-      throw new Error("Expected RazorPay order response but got different payment mode");
-    }
-
-    // Process the RazorPay payment
-    const result = await handleRazorpayPaymentFlow(orderDetails, callbacks);
-    
-    return result;
-  } catch (error: any) {
-    console.error("❌ RazorPay payment processing error:", error);
-    const errorMessage = error.message || "RazorPay payment failed";
-    callbacks.onError(errorMessage);
-    
-    return {
-      success: false,
-      orderId: "",
-      error: errorMessage,
-    };
+// Local validation for Razorpay handler response (moved from paymentDebug)
+const validateRazorpayResponse = (response: any): { valid: boolean; issues: string[] } => {
+  const issues: string[] = [];
+  if (!response) {
+    issues.push("Response is null or undefined");
+    return { valid: false, issues };
   }
+  if (!response.razorpay_payment_id) {
+    issues.push("Missing razorpay_payment_id");
+  }
+  if (!response.razorpay_order_id) {
+    issues.push("Missing razorpay_order_id");
+  }
+  if (!response.razorpay_signature) {
+    issues.push("Missing razorpay_signature");
+  }
+  return { valid: issues.length === 0, issues };
 };
+
 
 /**
  * Handle the complete RazorPay payment flow - Callback Based
@@ -157,13 +141,11 @@ export const handleRazorpayPaymentFlow = async (
       amount: orderDetails.amount,
       currency: orderDetails.currency,
       name: "Character Canvas Tales",
-      
       description: "Unlock Premium Features",
       order_id: orderDetails.razorpay_order_id,
       handler: async function (response: RazorpayResponse) {
         try {
           const timestamp = new Date().toISOString();
-          logPaymentFlow("RazorPay payment response received", response);
           console.log(`💰 [${timestamp}] RazorPay payment response received:`, response);
           
           // Add a small delay to allow cancellation/failure events to be processed first
@@ -180,9 +162,10 @@ export const handleRazorpayPaymentFlow = async (
             console.log("⚠️ Payment already verified, skipping duplicate verification");
             return;
           }
-          
+        
           // Validate RazorPay response
           const validation = validateRazorpayResponse(response);
+          debugger;
           if (!validation.valid) {
             console.error("❌ Invalid RazorPay response:", validation.issues);
             await handleFailedPayment(
@@ -227,15 +210,18 @@ export const handleRazorpayPaymentFlow = async (
             razorpay_signature: response.razorpay_signature,
           };
 
-          logPaymentFlow("Verifying RazorPay payment with backend", verificationData);
           console.log("🔍 RazorPay payment verification request:", verificationData);
+
 
           // Verify RazorPay payment
           const verificationResult = await verifyPayment(verificationData);
 
+
+
           console.log("📋 RazorPay payment verification response:", verificationResult);
           
           if (verificationResult.verified && verificationResult.status === "success") {
+
             // Prevent multiple payment success calls
             if (paymentState.verified) {
               console.log("⚠️ Payment already verified, skipping duplicate success call");
@@ -248,9 +234,6 @@ export const handleRazorpayPaymentFlow = async (
               return;
             }
             
-            console.log("✅ RazorPay payment verified successfully", verificationResult);
-            logPaymentFlow("RazorPay payment verified successfully", verificationResult);
-            console.log("🎉 RAZORPAY PAYMENT SUCCESS - Starting image generation...");
 
             paymentState.verified = true;
             toast.success("Payment successful! Generating your premium illustrations...");
@@ -269,7 +252,7 @@ export const handleRazorpayPaymentFlow = async (
               };
               
               // Use callback instead of dispatchEvent
-              callbacks.onSuccess(result);
+              callbacks.onSuccess();
               resolve(result);
             } else {
               console.log("⚠️ Skipping onSuccess - payment was cancelled, failed, or modal dismissed");
@@ -289,8 +272,6 @@ export const handleRazorpayPaymentFlow = async (
               verificationResult.error_message || "Verification failed"
             );
             
-            const tips = getPaymentTroubleshootingTips(verificationResult.error_message || "");
-            console.error("💡 Troubleshooting tips:", tips);
             toast.error("Payment verification failed. Please contact support.");
             callbacks.onError("Payment verification failed");
             resolve({
@@ -308,8 +289,6 @@ export const handleRazorpayPaymentFlow = async (
             error instanceof Error ? error.message : "Unknown error"
           );
           
-          const tips = getPaymentTroubleshootingTips(error instanceof Error ? error.message : "");
-          console.error("💡 Troubleshooting tips:", tips);
           toast.error("Payment verification failed. Please contact support.");
           callbacks.onError(error instanceof Error ? error.message : "Payment verification error");
           resolve({
@@ -395,63 +374,10 @@ export const handleRazorpayPaymentFlow = async (
     });
 
     rzp.open();
+
   });
 };
 
-/**
- * Create RazorPay order for authenticated users - Callback Based
- */
-export const createRazorpayOrder = async (
-  amount: number,
-  storyId?: string,
-  description?: string,
-  callbacks?: RazorpayPaymentCallbacks
-): Promise<RazorpayPaymentResult> => {
-  const defaultCallbacks: RazorpayPaymentCallbacks = {
-    onSuccess: (result) => console.log("✅ RazorPay order created successfully:", result),
-    onError: (error) => console.error("❌ RazorPay order creation failed:", error),
-    onCancel: () => console.log("⚠️ RazorPay order creation cancelled"),
-    ...callbacks
-  };
 
-  return processRazorpayPayment(
-    {
-      amount,
-      currency: "INR",
-      storyId,
-    },
-    defaultCallbacks
-  );
-};
 
-/**
- * Create RazorPay order for guest users - Callback Based
- */
-export const createRazorpayGuestOrder = async (
-  amount: number,
-  guestName: string,
-  guestEmail: string,
-  guestPhone: string,
-  storyId?: string,
-  description?: string,
-  callbacks?: RazorpayPaymentCallbacks
-): Promise<RazorpayPaymentResult> => {
-  const defaultCallbacks: RazorpayPaymentCallbacks = {
-    onSuccess: (result) => console.log("✅ RazorPay guest order created successfully:", result),
-    onError: (error) => console.error("❌ RazorPay guest order creation failed:", error),
-    onCancel: () => console.log("⚠️ RazorPay guest order creation cancelled"),
-    ...callbacks
-  };
 
-  return processRazorpayPayment(
-    {
-      amount,
-      currency: "INR",
-      storyId,
-      guestName,
-      guestEmail,
-      guestPhone,
-    },
-    defaultCallbacks
-  );
-};

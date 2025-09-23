@@ -1,28 +1,3 @@
-/**
- * Payment API utilities
- * 
- * This module handles payment order creation for both authenticated and anonymous users.
- * 
- * @example
- * // For authenticated users
- * const orderData = {
- *   amount: 49.00,
- *   currency: "INR",
- *   description: "Premium features"
- * };
- * const response = await createPaymentOrder(orderData, true);
- * 
- * @example
- * // For anonymous users
- * const orderData = {
- *   amount: 49.00,
- *   currency: "INR",
- *   guest_name: "John Doe",
- *   guest_email: "john.doe@example.com",
- *   guest_phone: "+919876543210"
- * };
- * const response = await createPaymentOrder(orderData, false);
- */
 
 import { apiFetch } from '@/utils/apiInterceptor';
 import { API_ENDPOINTS } from '@/config/api';
@@ -103,29 +78,7 @@ export const getPaymentMode = (): PaymentMode => {
   return mode;
 };
 
-export const isStripeEnabled = (): boolean => {
-  return getPaymentMode() === 'stripe';
-};
 
-export const isRazorpayEnabled = (): boolean => {
-  return getPaymentMode() === 'razorpay';
-};
-
-export const getPaymentConfig = (): PaymentConfig => {
-  const mode = getPaymentMode();
-  
-  return {
-    mode,
-    isStripeEnabled: mode === 'stripe',
-    isRazorpayEnabled: mode === 'razorpay',
-  };
-};
-
-/**
- * Create a payment order for both authenticated and anonymous users
- * For authenticated users: Only amount and currency are required
- * For anonymous users: Guest details (name, email, phone) are also required
- */
 export const createPaymentOrder = async (
   orderData: CreateOrderRequest,
   isAuthenticated: boolean = false
@@ -189,11 +142,7 @@ export const createPaymentOrder = async (
   }
 };
 
-/**
- * Verify a payment with the backend
- * This should be called after the payment is completed to verify the transaction
- * and update the order status in the database
- */
+
 export const verifyPayment = async (
   verificationData: PaymentVerificationRequest
 ): Promise<PaymentVerificationResponse> => {
@@ -218,36 +167,7 @@ export const verifyPayment = async (
   }
 };
 
-/**
- * Get payment status from the backend
- * This can be used to check the status of a payment without verification
- */
-export const getPaymentStatus = async (
-  orderId: string
-): Promise<PaymentVerificationResponse> => {
-  try {
-    const response = await apiFetch(`${API_ENDPOINTS.payments.getPaymentStatus}/${orderId}`, {
-      method: 'GET',
-    });
 
-    if (!response) {
-      throw new Error('Failed to get payment status.');
-    }
-
-    return response;
-  } catch (error) {
-    console.error('Failed to get payment status:', error);
-    throw error;
-  }
-};
-
-
-
-
-/**
- * Update order status in the backend
- * This is used to update the status when payments fail or are cancelled
- */
 export const updateOrderStatus = async (
   updateData: UpdateOrderStatusRequest
 ): Promise<UpdateOrderStatusResponse> => {
@@ -272,12 +192,6 @@ export const updateOrderStatus = async (
 };
 
 
-
-
-/**
- * Handle failed payment and update order status
- * This should be called when a payment fails or is cancelled
- */
 export const handleFailedPayment = async (
   orderId: string,
   failureReason: string,
@@ -340,11 +254,6 @@ export const handleFailedPayment = async (
 };
 
 
-
-/**
- * Handle cancelled payment and update order status
- * This should be called when a payment is cancelled by the user
- */
 export const handleCancelledPayment = async (
   orderId: string,
   paymentId?: string,
@@ -404,68 +313,3 @@ export const handleCancelledPayment = async (
 
 
 
-// Helper functions for creating payment orders
-export const createLoggedInUserOrder = async (
-  amount: number,
-  storyId?: string,
-  description?: string
-): Promise<CreateOrderResponse> => {
-  const paymentMode = getPaymentMode();
-  const currency = paymentMode === 'stripe' ? 'USD' : 'INR';
-  
-  return createPaymentOrder(
-    {
-      amount,
-      currency,
-      story_id: storyId,
-      description: description || 'Storymaker Premium',
-    },
-    true // isAuthenticated = true
-  );
-};
-
-export const createGuestUserOrder = async (
-  amount: number,
-  guestName: string,
-  guestEmail: string,
-  guestPhone: string,
-  storyId?: string,
-  description?: string
-): Promise<CreateOrderResponse> => {
-  const paymentMode = getPaymentMode();
-  const currency = paymentMode === 'stripe' ? 'USD' : 'INR';
-  
-  return createPaymentOrder(
-    {
-      amount,
-      currency,
-      guest_name: guestName,
-      guest_email: guestEmail,
-      guest_phone: guestPhone,
-      story_id: storyId,
-      description: description || 'Storymaker Premium',
-    },
-    false // isAuthenticated = false
-  );
-};
-
-// Convenience function that automatically detects authentication status
-export const createOrder = async (
-  amount: number,
-  storyId?: string,
-  description?: string,
-  guestName?: string,
-  guestEmail?: string,
-  guestPhone?: string
-): Promise<CreateOrderResponse> => {
-  const isAuthenticated = !!localStorage.getItem('authToken');
-  
-  if (isAuthenticated) {
-    return createLoggedInUserOrder(amount, storyId, description);
-  } else {
-    if (!guestName || !guestEmail || !guestPhone) {
-      throw new Error('Guest name, email, and phone are required for non-authenticated users');
-    }
-    return createGuestUserOrder(amount, guestName, guestEmail, guestPhone, storyId, description);
-  }
-}; 

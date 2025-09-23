@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { verifyStripePaymentFromWindow } from "@/utils/Payments/common/paymentProcessors";
+import { verifyStripePaymentFromWindow } from "@/utils/Payments/stripe/stripe";
 
 const PaymentSuccess = () => {
 	const [status, setStatus] = useState<"verifying" | "success" | "error">("verifying");

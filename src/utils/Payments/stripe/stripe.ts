@@ -468,4 +468,72 @@ export const handleStripePayment = async (
   }
 }; 
 
+/**
+ * Verify Stripe payment from current window URL and close window
+ */
+export const verifyStripePaymentFromWindow = async (): Promise<void> => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+
+    if (!sessionId) {
+      toast.error("No Stripe session ID found");
+      return;
+    }
+
+    console.log("🔍 Verifying Stripe payment with session ID:", sessionId);
+
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/stripe/verify-checkout-session/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("authToken")}`,
+      },
+      body: JSON.stringify({
+        session_id: sessionId
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Payment verification failed");
+    }
+
+    const result = await response.json();
+    console.log("✅ Stripe payment verification successful:", result);
+
+    // Persist success signal for parent window polling
+    localStorage.setItem("stripe_payment_success", "true");
+
+    toast.success("Payment successful!");
+
+    setTimeout(() => {
+      window.close();
+    }, 2000);
+  } catch (error) {
+    console.error("❌ Stripe payment verification failed:", error);
+    toast.error("Payment verification failed. Please contact support.");
+
+    setTimeout(() => {
+      window.close();
+    }, 3000);
+  }
+};
+
+/**
+ * Handle Stripe payment cancellation from popup window
+ */
+export const handleStripePaymentCancelledFromWindow = (): void => {
+  try {
+    toast.error("Payment was cancelled");
+    localStorage.setItem("stripe_payment_cancelled", "true");
+    setTimeout(() => {
+      window.close();
+    }, 2000);
+  } catch (error) {
+    setTimeout(() => {
+      window.close();
+    }, 2000);
+  }
+};
+
  
