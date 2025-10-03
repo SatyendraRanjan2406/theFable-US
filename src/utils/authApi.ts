@@ -233,6 +233,7 @@ export const initiateGoogleSSO = async (): Promise<{ success: boolean; authoriza
     console.log('📡 SSO Response status text:', response.statusText);
 
     let data;
+
     try {
       data = await response.json();
       console.log('📄 SSO Response data:', data);
@@ -302,8 +303,10 @@ export const handleGoogleCallback = async (code: string, state: string): Promise
     }
 
     if (response.ok) {
+
       console.log('✅ Successfully exchanged code for token');
       return { success: true, data };
+
     } else {
       const errorMessage = data.detail || data.message || data.error || 'Failed to exchange authorization code for token.';
       console.error('❌ Callback Error:', errorMessage);
@@ -314,6 +317,7 @@ export const handleGoogleCallback = async (code: string, state: string): Promise
       if (data.error) console.error('❌ Error:', data.error);
       
       return { success: false, error: errorMessage };
+      
     }
   } catch (error) {
     console.error('❌ Network error during callback handling:', error);
