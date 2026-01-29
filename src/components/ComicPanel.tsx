@@ -324,7 +324,7 @@ const ComicPanel: React.FC<ComicPanelProps> = ({
         
         {/* AI indicator with character consistency info */}
         {!imageLoading && !isLoading && !(retryLoadingPanels && retryLoadingPanels[panelIndex]) && hasImage && !imageLoadFailed && (
-          <div className={`absolute top-1 right-1 ${
+          <div className={`absolute top-1 left+1 ${
             viewMode === 'fullscreen' ? 'z-10' : ''
           }`}>
             <div className="bg-green-500/80 text-white text-xs px-2 py-1 rounded">

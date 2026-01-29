@@ -830,8 +830,8 @@ const FinalCuratedPreview: React.FC<FinalCuratedPreviewProps> = ({
     debugger
     if (!panels || panels.length === 0) {
       toast.error("Cannot generate locked images without panel data.");
-      setIsCreatingMagic(false);
-      setIsGeneratingPremiumContent(false);
+      // setIsCreatingMagic(false);
+      // setIsGeneratingPremiumContent(false);
       return;
     }
 

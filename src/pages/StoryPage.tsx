@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { BASE_URL } from '@/config/api';
+import { apiFetch } from '@/utils/apiInterceptor';
 
 interface Story {
   id: string;
@@ -36,22 +37,10 @@ const StoryPage: React.FC = () => {
   const fetchStory = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`${BASE_URL}/api/auth/stories/${id}/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setStory(data);
-      } else {
-        toast.error('Failed to fetch story');
-        navigate('/stories-history');
-      }
+      const data = await apiFetch(`${BASE_URL}/api/auth/stories/${id}/`);
+      setStory(data);
     } catch (error) {
-      toast.error('Failed to fetch story');
+      console.error('Error fetching story:', error);
       navigate('/stories-history');
     } finally {
       setIsLoading(false);

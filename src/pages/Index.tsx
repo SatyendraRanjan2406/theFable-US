@@ -25,12 +25,14 @@ import { StoryData } from '@/utils/types/storyTypes';
 import LoginModal from '@/components/LoginModal';
 import { useAuth } from '@/hooks/useAuth';
 import Footer from '@/components/Footer';
+import PaymentConfirmedModal from '@/components/story-preview/PaymentConfirmedModal';
 
 import { trackPhotosRegenerated, trackStoryRegenerated, trackStoryTemplateSelected } from '@/utils/gtm';
 import { SAMPLE_PDFS } from '@/components/AppHeader';
 import { BASE_URL } from '@/config/api';
 import { APP_CONFIG, getCarouselImages } from '@/config/app';
 import { getSamplePdfs } from '@/utils/domainUtils';
+import { debug } from 'console';
 
 
 // Carousel images for hero section - configurable from environment variables
@@ -127,9 +129,12 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const [paymentConfirmedOpen, setPaymentConfirmedOpen] = useState(false);
+  const [showPaymentConfirmedForEmailFlow, setShowPaymentConfirmedForEmailFlow] = useState(false);
   
 
   useEffect(() => {
+    debugger
     getSamplePdfs().then((pdfs) => {
       setSamplePdfs(pdfs);
     });
@@ -375,7 +380,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
           console.log('💰 Story data isPaid type:', typeof storyData.isPaid);
           console.log('💰 Story data is_paid type:', typeof storyData.is_paid);
           
-
+          debugger
           
           // Store panels data for ComicBook component
           setPanelsData(panels);
@@ -931,13 +936,13 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     //console.log('openaiApiKey from useFormData:', openaiApiKey ? 'YES' : 'NO');
     //console.log('openaiApiKey length:', openaiApiKey?.length);
     //console.log('openaiApiKey preview:', openaiApiKey?.substring(0, 20) + '...');
-    const openaiApiKey1 = "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";
+    const openaiApiKey1 = import.meta.env.VITE_OPENAI_API_KEY;
     generateOutline(formData, openaiApiKey1);
   };
 
   const handleRegenerateOutlineWithData = () => {
     //console.log('=== DEBUG: handleRegenerateOutlineWithData called ===', openaiApiKey);
-    const openaiApiKey1 = "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";
+    const openaiApiKey1 = import.meta.env.VITE_OPENAI_API_KEY;
 
     handleRegenerateOutline(formData, openaiApiKey1);
   };
@@ -1037,7 +1042,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     setStorybookImages(images);
     setIsGeneratingImages(false);
     setImageGenerationErrors({});
-    
+    debugger
     // Store panel data for use in ComicBook component
     if (panelData && panelData.length > 0) {
       setPanelsData(panelData);
@@ -1195,7 +1200,6 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     import('@/utils/gtm').then(({ trackCheckoutStarted }) => {
       trackCheckoutStarted('unlock_now_panels_button', 49);
     });
-    
     setIsPricingModalOpen(true);
   };
 
@@ -1203,7 +1207,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     console.log('=== GENERATE LOCKED IMAGES START ===');
     console.log('🔍 generateLockedImages called with forcePaid:', forcePaid);
     console.log('🔍 Current isPaid state:', isPaid);
-    
+    debugger
     // Check if this is a curated story
     const isCuratedStory = curatedStoryForEdit || curatedStoryResult;
     console.log('🔍 Is curated story:', !!isCuratedStory);
@@ -1220,8 +1224,9 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     debugger
     if (!panelsData || panelsData.length === 0) {
       toast.error("Cannot generate locked images without panel data.");
-      setIsCreatingMagic(false);
-      setIsGeneratingPremiumContent(false);
+      debugger
+      // setIsCreatingMagic(false);
+      // setIsGeneratingPremiumContent(false);
       return;
     }
 
@@ -1281,7 +1286,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
               status: result.panel.status,
               updated_at: new Date().toISOString()
             };
-            
+            debugger
             setPanelsData(prev => prev.map((p, idx) => 
               idx === overallIndex ? updatedPanel : p
             ));
@@ -1303,7 +1308,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     } else {
       // Use AI story generation flow (existing logic)
       console.log('🔄 Using AI story generation flow');
-      
+      debugger
       // 2. Process in chunks of 2
       const chunkSize = 2;
       for (let i = 0; i < panelsToGenerate.length; i += chunkSize) {
@@ -1434,6 +1439,16 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
     setIsGeneratingImages(true);
     setIsPaid(true); // <-- Actually set isPaid to true here
     
+    // Open confirmation modal only for email button initiated flow
+    try {
+      const initiatedFromEmailFlow = localStorage.getItem('emailflow') === '1';
+      if (initiatedFromEmailFlow || showPaymentConfirmedForEmailFlow) {
+        setPaymentConfirmedOpen(true);
+        localStorage.removeItem('emailflow');
+        setShowPaymentConfirmedForEmailFlow(false);
+      }
+    } catch {}
+    
     // Step 2: Calculate total panels and unlock ALL panels immediately
     const storyToProcess = storybookText || generatedStory;
     const panelMatches = storyToProcess?.match(/Panel \d+:/g);
@@ -1553,7 +1568,7 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
         const panelNumber = panelsData?.[panelIndex]?.panel_number;
         
         let result;
-        
+        debugger
         if (isCuratedStory) {
           // Use curated story panel regeneration API (same as FinalCuratedPreview)
           console.log('🔄 Using curated story panel regeneration API');
@@ -1969,6 +1984,8 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
         isCartoonSelectedForStory={formData.isCartoonSelectedForStory}
         error={Object.keys(imageGenerationErrors).length > 0}
         onRetry={handleRetryImageGeneration}
+        isPaid={isPaid}
+        onUnlockRequest={handleUnlockRequest}
       />
     );
   } else if (step === 'final' || currentStep === 'final') {
@@ -2360,6 +2377,8 @@ const Index: React.FC<IndexProps> = ({ onMenuToggle }) => {
         isProcessing={isGeneratingPremiumContent}
         storyId={storyId}
       />
+
+      <PaymentConfirmedModal open={paymentConfirmedOpen} onClose={() => setPaymentConfirmedOpen(false)} />
 
       <LoginModal 
         isOpen={isLoginModalOpen} 
